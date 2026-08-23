@@ -133,15 +133,24 @@ export async function renderMyLeave(container, context) {
     warningsBox.innerHTML = html;
   }
 
+  let startTouched = false;
+  let endTouched = false;
+
   startInput.addEventListener('change', () => {
+    startTouched = true;
     endInput.min = startInput.value;
-    if (!endInput.value || endInput.value < startInput.value) {
+    if (!endTouched || endInput.value < startInput.value) {
       endInput.value = startInput.value;
     }
     updatePortionVisibility();
     checkOverlaps();
   });
   endInput.addEventListener('change', () => {
+    endTouched = true;
+    if (!startTouched || startInput.value > endInput.value) {
+      startInput.value = endInput.value;
+      endInput.min = startInput.value;
+    }
     updatePortionVisibility();
     checkOverlaps();
   });
@@ -195,6 +204,8 @@ export async function renderMyLeave(container, context) {
     e.target.reset();
     startInput.value = todayISO();
     endInput.value = todayISO();
+    startTouched = false;
+    endTouched = false;
     if (!isAdmin) startInput.min = todayISO();
     updatePortionVisibility();
     warningsBox.innerHTML = '';
@@ -317,6 +328,9 @@ export async function renderMyLeave(container, context) {
         const row = btn.closest('tr');
         startInput.value = row.dataset.start;
         endInput.value = row.dataset.end;
+        startTouched = true;
+        endTouched = true;
+        updatePortionVisibility();
         checkOverlaps();
         window.scrollTo({ top: 0, behavior: 'smooth' });
       });

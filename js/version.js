@@ -6,9 +6,23 @@
 //
 // Bei jeder Aenderung: APP_VERSION anpassen UND einen neuen Eintrag oben in CHANGELOG ergaenzen.
 
-export const APP_VERSION = '1.20.2';
+export const APP_VERSION = '1.20.3';
 
 export const CHANGELOG = [
+  {
+    version: '1.20.3',
+    date: '2026-08-23',
+    changes: {
+      de: [
+        'Fehlerbehebung: Halbtag-Feld verschwand auch beim Setzen des "Bis"-Datums (vorheriger Fix deckte nur die Richtung "Von" ab) - beide Felder ziehen jetzt in beide Richtungen mit, solange nicht beide bewusst unterschiedlich gesetzt wurden',
+        '"Erneut beantragen" bei abgelehnten Anträgen zeigt das Halbtag-Feld jetzt korrekt an, falls zutreffend',
+      ],
+      en: [
+        'Bug fix: the half-day selector also disappeared when setting the "To" date (previous fix only covered the "From" direction) - both fields now follow each other in either direction until both have been deliberately set to different values',
+        '"Reapply" on rejected requests now correctly shows the half-day field when applicable',
+      ],
+    },
+  },
   {
     version: '1.20.2',
     date: '2026-08-23',
