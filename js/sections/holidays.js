@@ -3,46 +3,25 @@ import { t } from '../i18n.js';
 import { ICON_EDIT, ICON_DELETE, iconButton, fieldLabel } from '../icons.js';
 import { createSortState, sortableHeader, wireSortHeaders, sortArray } from '../sortable.js';
 import { formatDate, todayISO } from '../dateFormat.js';
+import { openFormModal } from '../modal.js';
 
 export async function renderHolidays(container) {
-  // Standard: Datum Z-A (neueste/zukuenftigste zuerst), per Klick auf Spaltenkopf umschaltbar
   const sortState = createSortState('date', false);
   let holidaysData = [];
 
   container.innerHTML = `
     <header><h1>${t('nav.holidays')}</h1></header>
     <div class="card">
-      <div class="form-panel-title" id="hol-form-title">${t('common.add')}</div>
-      <form id="hol-form">
-        <input type="hidden" id="f-id">
-        <div class="form-grid">
-          ${fieldLabel(t('holidays.date'), 'Datum des Feiertags. Wird bei der Kapazitätsberechnung automatisch als Nicht-Arbeitstag berücksichtigt.')}
-          <input type="date" id="f-date" required class="narrow" value="${todayISO()}">
-
-          <label>${t('holidays.name')}</label>
-          <input type="text" id="f-name" required>
-
-          ${fieldLabel(t('holidays.note'), 'Optionale Zusatzinfo, z. B. "Fällt auf einen Samstag".')}
-          <input type="text" id="f-note">
-        </div>
-        <div class="form-actions">
-          <button type="button" class="btn btn-secondary" id="hol-cancel-btn" hidden>${t('common.cancel')}</button>
-          <button type="submit" class="btn btn-primary" id="hol-submit-btn">${t('common.add')}</button>
-        </div>
-      </form>
-    </div>
-
-    <div class="card">
+      <div class="toolbar">
+        <div></div>
+        <button type="button" class="btn btn-primary" id="open-add-btn">${t('common.add')}</button>
+      </div>
       <table>
         <thead><tr id="hol-thead-row"></tr></thead>
         <tbody id="hol-tbody"><tr><td colspan="4" class="empty-state">${t('common.loading')}</td></tr></tbody>
       </table>
     </div>
   `;
-
-  const form = document.getElementById('hol-form');
-  const submitBtn = document.getElementById('hol-submit-btn');
-  const cancelBtn = document.getElementById('hol-cancel-btn');
 
   function wireHead() {
     const row = document.getElementById('hol-thead-row');
@@ -55,35 +34,52 @@ export async function renderHolidays(container) {
   }
   wireHead();
 
-  function resetForm() {
-    form.reset();
-    document.getElementById('f-id').value = '';
-    document.getElementById('f-date').value = todayISO();
-    submitBtn.textContent = t('common.add');
-    document.getElementById('hol-form-title').textContent = t('common.add');
-    cancelBtn.hidden = true;
+  function formBody(h) {
+    return `
+      <div class="form-grid">
+        ${fieldLabel(t('holidays.date'), 'Datum des Feiertags. Wird bei der Kapazitätsberechnung automatisch als Nicht-Arbeitstag berücksichtigt.')}
+        <input type="date" id="mf-date" required value="${h ? h.date : todayISO()}">
+
+        <label>${t('holidays.name')}</label>
+        <input type="text" id="mf-name" required value="${h ? escapeHtml(h.name) : ''}">
+
+        ${fieldLabel(t('holidays.note'), 'Optionale Zusatzinfo, z. B. "Fällt auf einen Samstag".')}
+        <input type="text" id="mf-note" value="${h && h.note ? escapeHtml(h.note) : ''}">
+      </div>
+    `;
   }
 
-  cancelBtn.addEventListener('click', resetForm);
+  function openAdd() {
+    const modal = openFormModal({ title: t('common.add'), bodyHtml: formBody(null), submitLabel: t('common.add'), cancelLabel: t('common.cancel') });
+    modal.submitBtn.addEventListener('click', async () => {
+      const payload = {
+        date: modal.body.querySelector('#mf-date').value,
+        name: modal.body.querySelector('#mf-name').value.trim(),
+        note: modal.body.querySelector('#mf-note').value.trim() || null,
+      };
+      const { error } = await supabase.from('holidays').insert(payload);
+      if (error) { alert(t('common.error') + '\n' + error.message); return; }
+      modal.close();
+      load();
+    });
+  }
 
-  form.addEventListener('submit', async e => {
-    e.preventDefault();
-    const id = document.getElementById('f-id').value;
-    const payload = {
-      date: document.getElementById('f-date').value,
-      name: document.getElementById('f-name').value.trim(),
-      note: document.getElementById('f-note').value.trim() || null,
-    };
+  function openEdit(h) {
+    const modal = openFormModal({ title: t('common.edit'), bodyHtml: formBody(h), submitLabel: t('common.save'), cancelLabel: t('common.cancel') });
+    modal.submitBtn.addEventListener('click', async () => {
+      const payload = {
+        date: modal.body.querySelector('#mf-date').value,
+        name: modal.body.querySelector('#mf-name').value.trim(),
+        note: modal.body.querySelector('#mf-note').value.trim() || null,
+      };
+      const { error } = await supabase.from('holidays').update(payload).eq('id', h.id);
+      if (error) { alert(t('common.error') + '\n' + error.message); return; }
+      modal.close();
+      load();
+    });
+  }
 
-    const query = id
-      ? supabase.from('holidays').update(payload).eq('id', id)
-      : supabase.from('holidays').insert(payload);
-
-    const { error } = await query;
-    if (error) { alert(t('common.error') + '\n' + error.message); return; }
-    resetForm();
-    load();
-  });
+  document.getElementById('open-add-btn').addEventListener('click', openAdd);
 
   async function load() {
     const tbody = document.getElementById('hol-tbody');
@@ -118,15 +114,7 @@ export async function renderHolidays(container) {
     tbody.querySelectorAll('.edit-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         const id = btn.closest('tr').dataset.id;
-        const h = holidaysData.find(x => x.id === id);
-        document.getElementById('f-id').value = h.id;
-        document.getElementById('f-date').value = h.date;
-        document.getElementById('f-name').value = h.name;
-        document.getElementById('f-note').value = h.note || '';
-        submitBtn.textContent = t('common.save');
-        document.getElementById('hol-form-title').textContent = t('common.edit');
-        cancelBtn.hidden = false;
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        openEdit(holidaysData.find(x => x.id === id));
       });
     });
 

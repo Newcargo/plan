@@ -3,6 +3,7 @@ import { t } from '../i18n.js';
 import { ICON_KEY, iconButton, fieldLabel } from '../icons.js';
 import { createSortState, sortableHeader, wireSortHeaders, sortArray } from '../sortable.js';
 import { ROLE_DEFINITIONS, ALL_ROLE_KEYS as ALL_ROLES, getIncludedLabels } from '../roleDefinitions.js';
+import { openFormModal } from '../modal.js';
 
 // Ruft die admin-users Edge Function auf und liest bei einem Fehler die echte Meldung
 // aus dem Response-Body ("error"-Feld), statt der generischen supabase-js-Meldung
@@ -60,23 +61,10 @@ export async function renderRoles(container) {
     </div>
 
     <div class="card">
-      <div class="form-panel-title">${t('roles.addLoginTitle')}</div>
-      <form id="create-login-form">
-        <div class="form-grid">
-          ${fieldLabel(t('roles.employee'), 'Nur Mitarbeiter ohne bestehenden App-Zugang werden hier angezeigt.')}
-          <select id="f-employee" required></select>
-
-          ${fieldLabel(t('roles.email'), 'Login-E-Mail-Adresse. Wird mit dem Supabase-Auth-Account verknüpft und ist danach die Anmelde-Adresse.')}
-          <input type="email" id="f-email" required>
-
-          ${fieldLabel(t('roles.defaultPassword'), t('roles.defaultPasswordHint'))}
-          <input type="text" id="f-password" minlength="8" required>
-        </div>
-        <div class="form-actions" style="justify-content:flex-start;">
-          <button type="submit" class="btn btn-primary">${t('roles.createLogin')}</button>
-        </div>
-      </form>
-      <p id="create-login-msg" class="error-text" hidden></p>
+      <div class="toolbar">
+        <div class="form-panel-title" style="margin-bottom:0;">${t('roles.addLoginTitle')}</div>
+        <button type="button" class="btn btn-primary" id="open-add-login-btn">${t('roles.createLogin')}</button>
+      </div>
     </div>
 
     <div class="card">
@@ -84,6 +72,50 @@ export async function renderRoles(container) {
       <div id="role-list"></div>
     </div>
   `;
+
+  let employeesWithoutLogin = [];
+
+  function loginFormBody() {
+    if (!employeesWithoutLogin.length) {
+      return `<p class="empty-state">${t('roles.noEmployeesWithoutLogin')}</p>`;
+    }
+    return `
+      <div class="form-grid">
+        ${fieldLabel(t('roles.employee'), 'Nur Mitarbeiter ohne bestehenden App-Zugang werden hier angezeigt.')}
+        <select id="mf-employee" required>${employeesWithoutLogin.map(e => `<option value="${e.id}">${escapeHtml(e.full_name)}</option>`).join('')}</select>
+
+        ${fieldLabel(t('roles.email'), 'Login-E-Mail-Adresse. Wird mit dem Supabase-Auth-Account verknüpft und ist danach die Anmelde-Adresse.')}
+        <input type="email" id="mf-email" required>
+
+        ${fieldLabel(t('roles.defaultPassword'), t('roles.defaultPasswordHint'))}
+        <input type="text" id="mf-password" minlength="8" required>
+      </div>
+    `;
+  }
+
+  document.getElementById('open-add-login-btn').addEventListener('click', () => {
+    const modal = openFormModal({
+      title: t('roles.addLoginTitle'),
+      bodyHtml: loginFormBody(),
+      submitLabel: t('roles.createLogin'),
+      cancelLabel: t('common.cancel'),
+    });
+    if (!employeesWithoutLogin.length) { modal.submitBtn.hidden = true; return; }
+
+    modal.submitBtn.addEventListener('click', async () => {
+      const employee_id = modal.body.querySelector('#mf-employee').value;
+      const email = modal.body.querySelector('#mf-email').value.trim();
+      const password = modal.body.querySelector('#mf-password').value;
+      if (!employee_id || !email || !password) return;
+
+      const { error } = await invokeAdminUsers({ action: 'create_login', employee_id, email, password });
+      if (error) { alert(error); return; }
+
+      modal.close();
+      await loadEmployeesWithoutLogin();
+      await load();
+    });
+  });
 
   function wireHead() {
     const header = document.getElementById('role-list-header');
@@ -98,41 +130,9 @@ export async function renderRoles(container) {
   }
   wireHead();
 
-  document.getElementById('create-login-form').addEventListener('submit', async e => {
-    e.preventDefault();
-    const msg = document.getElementById('create-login-msg');
-    msg.hidden = true;
-
-    const employee_id = document.getElementById('f-employee').value;
-    const email = document.getElementById('f-email').value.trim();
-    const password = document.getElementById('f-password').value;
-
-    if (!employee_id) return;
-
-    const { data, error } = await invokeAdminUsers({ action: 'create_login', employee_id, email, password });
-
-    if (error) {
-      msg.textContent = error;
-      msg.hidden = false;
-      return;
-    }
-
-    e.target.reset();
-    await loadEmployeeSelect();
-    await load();
-  });
-
-  async function loadEmployeeSelect() {
-    const select = document.getElementById('f-employee');
+  async function loadEmployeesWithoutLogin() {
     const { data } = await supabase.from('employees').select('id, full_name, auth_user_id').order('full_name');
-    const withoutLogin = (data || []).filter(e => !e.auth_user_id);
-    if (!withoutLogin.length) {
-      select.innerHTML = `<option value="">${t('roles.noEmployeesWithoutLogin')}</option>`;
-      select.disabled = true;
-      return;
-    }
-    select.disabled = false;
-    select.innerHTML = withoutLogin.map(e => `<option value="${e.id}">${escapeHtml(e.full_name)}</option>`).join('');
+    employeesWithoutLogin = (data || []).filter(e => !e.auth_user_id);
   }
 
   async function load() {
@@ -304,6 +304,6 @@ export async function renderRoles(container) {
     }[s]));
   }
 
-  await loadEmployeeSelect();
+  await loadEmployeesWithoutLogin();
   await load();
 }

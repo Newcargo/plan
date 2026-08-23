@@ -26,7 +26,10 @@ export async function renderMyLeave(container, context) {
   isExternal = !!(empDetail && empDetail.is_external);
 
   container.innerHTML = `
-    <header><h1>${t('myLeave.title')}</h1></header>
+    <header>
+      <h1>${t('myLeave.title')}</h1>
+      <button type="button" class="btn btn-secondary" id="goto-team-cal-btn" style="margin-top:0.5rem;">${t('myLeave.gotoTeamCalendar')} →</button>
+    </header>
 
     <div class="card">
       <div class="form-panel-title">${t('myLeave.legendTitle')}</div>
@@ -81,6 +84,11 @@ export async function renderMyLeave(container, context) {
       </table>
     </div>
   `;
+
+  document.getElementById('goto-team-cal-btn').addEventListener('click', () => {
+    const navBtn = document.querySelector('.nav-item[data-route="team-calendar"]');
+    if (navBtn) navBtn.click();
+  });
 
   const startInput = document.getElementById('f-leave-start');
   const endInput = document.getElementById('f-leave-end');

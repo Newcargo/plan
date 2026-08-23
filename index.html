@@ -50,18 +50,29 @@
 
 <!-- App shell -->
 <div id="app-shell" class="app-shell" hidden>
-  <div class="lang-toggle-corner">
-    <button class="lang-btn" data-lang="de" title="Deutsch" aria-label="Deutsch">🇩🇪</button>
-    <button class="lang-btn" data-lang="en" title="English" aria-label="English">🇬🇧</button>
+  <div class="top-right-controls">
+    <div class="notif-bell-wrap">
+      <button id="notif-bell-btn" class="notif-bell-btn" aria-label="Benachrichtigungen" title="Benachrichtigungen">
+        🔔<span id="notif-badge" class="notif-badge" hidden>0</span>
+      </button>
+      <div id="notif-dropdown" class="notif-dropdown" hidden></div>
+    </div>
+    <div class="lang-toggle-corner">
+      <button class="lang-btn" data-lang="de" title="Deutsch" aria-label="Deutsch">🇩🇪</button>
+      <button class="lang-btn" data-lang="en" title="English" aria-label="English">🇬🇧</button>
+    </div>
   </div>
 
   <nav class="sidebar">
     <div class="brand" data-i18n="app.title">Urlaub & Kapazität</div>
     <div class="sidebar-user" id="sidebar-user"></div>
 
+    <div class="nav-group-label" data-i18n="nav.groupLeave">Urlaub</div>
     <button class="nav-item" data-route="my-leave"><span data-i18n="nav.myLeave">Mein Urlaub</span></button>
     <button class="nav-item" data-route="team-calendar"><span data-i18n="nav.teamCalendar">Team-Kalender</span></button>
     <button class="nav-item" data-route="approvals" data-requires-any="stufe2_genehmiger,people_pool_manager,admin"><span data-i18n="nav.approvals">Genehmigungen</span></button>
+
+    <div class="nav-group-label" data-requires="admin" data-i18n="nav.groupAdmin">Verwaltung</div>
     <button class="nav-item" data-route="dashboard" data-requires="admin"><span data-i18n="nav.dashboard">Übersicht</span></button>
     <button class="nav-item" data-route="teams" data-requires="admin"><span data-i18n="nav.teams">Teams</span></button>
     <button class="nav-item" data-route="employees" data-requires="admin"><span data-i18n="nav.employees">Mitarbeiter</span></button>
@@ -71,6 +82,9 @@
     <button class="nav-item" data-route="bands" data-requires="admin"><span data-i18n="nav.bands">Konfidenzband</span></button>
     <button class="nav-item" data-route="settings" data-requires="admin"><span data-i18n="nav.settings">Einstellungen</span></button>
     <button class="nav-item" data-route="roles" data-requires="admin"><span data-i18n="nav.roles">Rollen & Zugriff</span></button>
+    <button class="nav-item" data-route="audit-log" data-requires="admin"><span data-i18n="nav.auditLog">Audit-Log</span></button>
+
+    <div class="nav-group-label" data-i18n="nav.groupOther">Sonstiges</div>
     <button class="nav-item" data-route="changelog"><span data-i18n="nav.changelog">Change-Log</span></button>
     <button class="nav-item" id="logout-btn"><span data-i18n="nav.logout">Abmelden</span></button>
 

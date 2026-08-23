@@ -1,6 +1,7 @@
 import { supabase } from '../supabaseClient.js';
 import { t } from '../i18n.js';
 import { ICON_EDIT, ICON_DELETE, iconButton, fieldLabel } from '../icons.js';
+import { openFormModal } from '../modal.js';
 
 export async function renderBands(container) {
   container.innerHTML = `
@@ -9,25 +10,10 @@ export async function renderBands(container) {
       <p>${t('bands.subtitle')}</p>
     </header>
     <div class="card">
-      <div class="form-panel-title">${t('common.save')}</div>
-      <form id="band-form">
-        <div class="form-grid">
-          ${fieldLabel(t('bands.position'), 'Position des Sprints innerhalb der PI (1 = direkt nach PI Planning). Muss mit der Sprint-Position bei "PI & Sprints" übereinstimmen.')}
-          <input type="number" id="f-pos" min="1" required class="narrow">
-
-          ${fieldLabel(t('bands.lower'), 'Wie viel Prozent der berechneten Kapazität mindestens erwartet wird. Je weiter der Sprint vom PI Planning entfernt ist, desto grösser meist die Unsicherheit.')}
-          <input type="number" id="f-lower" min="0" max="1" step="0.01" required class="narrow">
-
-          ${fieldLabel(t('bands.upper'), 'Wie viel Prozent der berechneten Kapazität höchstens erwartet wird, meist 100%.')}
-          <input type="number" id="f-upper" min="0" max="1" step="0.01" required class="narrow">
-        </div>
-        <div class="form-actions">
-          <button type="submit" class="btn btn-primary">${t('common.save')}</button>
-        </div>
-      </form>
-    </div>
-
-    <div class="card">
+      <div class="toolbar">
+        <div></div>
+        <button type="button" class="btn btn-primary" id="open-add-btn">${t('common.add')}</button>
+      </div>
       <table>
         <thead><tr>
           <th>${t('bands.position')}</th><th class="num">${t('bands.lower')}</th><th class="num">${t('bands.upper')}</th><th></th>
@@ -37,19 +23,52 @@ export async function renderBands(container) {
     </div>
   `;
 
-  document.getElementById('band-form').addEventListener('submit', async e => {
-    e.preventDefault();
-    const payload = {
-      sprint_position: document.getElementById('f-pos').value,
-      lower_pct: document.getElementById('f-lower').value,
-      upper_pct: document.getElementById('f-upper').value,
-    };
-    // upsert: Position ist Primary Key -> bestehender Eintrag wird ueberschrieben
-    const { error } = await supabase.from('confidence_bands').upsert(payload, { onConflict: 'sprint_position' });
-    if (error) { alert(t('common.error') + '\n' + error.message); return; }
-    e.target.reset();
-    load();
-  });
+  function formBody(b) {
+    return `
+      <div class="form-grid">
+        ${fieldLabel(t('bands.position'), 'Position des Sprints innerhalb der PI (1 = direkt nach PI Planning). Muss mit der Sprint-Position bei "PI & Sprints" übereinstimmen.')}
+        <input type="number" id="mf-pos" min="1" required ${b ? 'readonly' : ''} value="${b ? b.sprint_position : ''}">
+
+        ${fieldLabel(t('bands.lower'), 'Wie viel Prozent der berechneten Kapazität mindestens erwartet wird.')}
+        <input type="number" id="mf-lower" min="0" max="1" step="0.01" required value="${b ? b.lower_pct : ''}">
+
+        ${fieldLabel(t('bands.upper'), 'Wie viel Prozent der berechneten Kapazität höchstens erwartet wird, meist 100%.')}
+        <input type="number" id="mf-upper" min="0" max="1" step="0.01" required value="${b ? b.upper_pct : ''}">
+      </div>
+    `;
+  }
+
+  function openAdd() {
+    const modal = openFormModal({ title: t('common.add'), bodyHtml: formBody(null), submitLabel: t('common.save'), cancelLabel: t('common.cancel') });
+    modal.submitBtn.addEventListener('click', async () => {
+      const payload = {
+        sprint_position: modal.body.querySelector('#mf-pos').value,
+        lower_pct: modal.body.querySelector('#mf-lower').value,
+        upper_pct: modal.body.querySelector('#mf-upper').value,
+      };
+      const { error } = await supabase.from('confidence_bands').upsert(payload, { onConflict: 'sprint_position' });
+      if (error) { alert(t('common.error') + '\n' + error.message); return; }
+      modal.close();
+      load();
+    });
+  }
+
+  function openEdit(b) {
+    const modal = openFormModal({ title: t('common.edit'), bodyHtml: formBody(b), submitLabel: t('common.save'), cancelLabel: t('common.cancel') });
+    modal.submitBtn.addEventListener('click', async () => {
+      const payload = {
+        sprint_position: b.sprint_position,
+        lower_pct: modal.body.querySelector('#mf-lower').value,
+        upper_pct: modal.body.querySelector('#mf-upper').value,
+      };
+      const { error } = await supabase.from('confidence_bands').upsert(payload, { onConflict: 'sprint_position' });
+      if (error) { alert(t('common.error') + '\n' + error.message); return; }
+      modal.close();
+      load();
+    });
+  }
+
+  document.getElementById('open-add-btn').addEventListener('click', openAdd);
 
   async function load() {
     const tbody = document.getElementById('band-tbody');
@@ -71,12 +90,8 @@ export async function renderBands(container) {
 
     tbody.querySelectorAll('.edit-btn').forEach(btn => {
       btn.addEventListener('click', () => {
-        const row = btn.closest('tr');
-        const b = data.find(x => String(x.sprint_position) === row.dataset.pos);
-        document.getElementById('f-pos').value = b.sprint_position;
-        document.getElementById('f-lower').value = b.lower_pct;
-        document.getElementById('f-upper').value = b.upper_pct;
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        const pos = btn.closest('tr').dataset.pos;
+        openEdit(data.find(x => String(x.sprint_position) === pos));
       });
     });
 

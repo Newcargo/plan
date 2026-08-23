@@ -3,6 +3,7 @@ import { t } from '../i18n.js';
 import { ICON_EDIT, ICON_DELETE, iconButton, fieldLabel } from '../icons.js';
 import { createSortState, sortableHeader, wireSortHeaders, sortArray } from '../sortable.js';
 import { formatDate, todayISO } from '../dateFormat.js';
+import { openFormModal } from '../modal.js';
 
 export async function renderBlocked(container) {
   const sortState = createSortState('start_date', false);
@@ -11,41 +12,16 @@ export async function renderBlocked(container) {
   container.innerHTML = `
     <header><h1>${t('nav.blocked')}</h1></header>
     <div class="card">
-      <div class="form-panel-title" id="bp-form-title">${t('common.add')}</div>
-      <form id="bp-form">
-        <input type="hidden" id="f-id">
-        <div class="form-grid">
-          ${fieldLabel(t('blocked.start') + ' – ' + t('blocked.end'), 'Zeitraum der Sperrzeit.')}
-          <div class="date-range-inline">
-            <input type="date" id="f-start" required value="${todayISO()}">
-            <span>–</span>
-            <input type="date" id="f-end" required value="${todayISO()}">
-          </div>
-
-          ${fieldLabel(t('blocked.label'), 'Grund der Sperrzeit, z. B. "Betriebsferien" oder "Wartungsfenster".')}
-          <input type="text" id="f-label" required>
-
-          ${fieldLabel(t('blocked.capacityImpact'), 'Aktiv: wirkt wie eine Firmenschliessung und wird von der verfügbaren Kapazität abgezogen. Inaktiv: dient nur als Genehmigungshinweis im Urlaubskalender, ohne die Kapazität zu verändern.')}
-          <input type="checkbox" id="f-impact" checked>
-        </div>
-        <div class="form-actions">
-          <button type="button" class="btn btn-secondary" id="bp-cancel-btn" hidden>${t('common.cancel')}</button>
-          <button type="submit" class="btn btn-primary" id="bp-submit-btn">${t('common.add')}</button>
-        </div>
-      </form>
-    </div>
-
-    <div class="card">
+      <div class="toolbar">
+        <div></div>
+        <button type="button" class="btn btn-primary" id="open-add-btn">${t('common.add')}</button>
+      </div>
       <table>
         <thead><tr id="bp-thead-row"></tr></thead>
         <tbody id="bp-tbody"><tr><td colspan="5" class="empty-state">${t('common.loading')}</td></tr></tbody>
       </table>
     </div>
   `;
-
-  const form = document.getElementById('bp-form');
-  const submitBtn = document.getElementById('bp-submit-btn');
-  const cancelBtn = document.getElementById('bp-cancel-btn');
 
   function wireHead() {
     const row = document.getElementById('bp-thead-row');
@@ -59,42 +35,66 @@ export async function renderBlocked(container) {
   }
   wireHead();
 
-  document.getElementById('f-start').addEventListener('change', e => {
-    document.getElementById('f-end').min = e.target.value;
-  });
+  function formBody(bp) {
+    return `
+      <div class="form-grid">
+        ${fieldLabel(t('blocked.start') + ' – ' + t('blocked.end'), 'Zeitraum der Sperrzeit.')}
+        <div class="date-range-inline">
+          <input type="date" id="mf-start" required value="${bp ? bp.start_date : todayISO()}">
+          <span>–</span>
+          <input type="date" id="mf-end" required value="${bp ? bp.end_date : todayISO()}">
+        </div>
 
-  function resetForm() {
-    form.reset();
-    document.getElementById('f-id').value = '';
-    document.getElementById('f-impact').checked = true;
-    document.getElementById('f-start').value = todayISO();
-    document.getElementById('f-end').value = todayISO();
-    submitBtn.textContent = t('common.add');
-    document.getElementById('bp-form-title').textContent = t('common.add');
-    cancelBtn.hidden = true;
+        ${fieldLabel(t('blocked.label'), 'Grund der Sperrzeit, z. B. "Betriebsferien" oder "Wartungsfenster".')}
+        <input type="text" id="mf-label" required value="${bp ? escapeHtml(bp.label) : ''}">
+
+        ${fieldLabel(t('blocked.capacityImpact'), 'Aktiv: wirkt wie eine Firmenschliessung und wird von der verfügbaren Kapazität abgezogen. Inaktiv: dient nur als Genehmigungshinweis im Urlaubskalender, ohne die Kapazität zu verändern.')}
+        <input type="checkbox" id="mf-impact" ${!bp || bp.capacity_impact ? 'checked' : ''}>
+      </div>
+    `;
   }
 
-  cancelBtn.addEventListener('click', resetForm);
+  function wireDateLink(modal) {
+    modal.body.querySelector('#mf-start').addEventListener('change', e => {
+      modal.body.querySelector('#mf-end').min = e.target.value;
+    });
+  }
 
-  form.addEventListener('submit', async e => {
-    e.preventDefault();
-    const id = document.getElementById('f-id').value;
-    const payload = {
-      start_date: document.getElementById('f-start').value,
-      end_date: document.getElementById('f-end').value,
-      label: document.getElementById('f-label').value.trim(),
-      capacity_impact: document.getElementById('f-impact').checked,
-    };
+  function openAdd() {
+    const modal = openFormModal({ title: t('common.add'), bodyHtml: formBody(null), submitLabel: t('common.add'), cancelLabel: t('common.cancel') });
+    wireDateLink(modal);
+    modal.submitBtn.addEventListener('click', async () => {
+      const payload = {
+        start_date: modal.body.querySelector('#mf-start').value,
+        end_date: modal.body.querySelector('#mf-end').value,
+        label: modal.body.querySelector('#mf-label').value.trim(),
+        capacity_impact: modal.body.querySelector('#mf-impact').checked,
+      };
+      const { error } = await supabase.from('blocked_periods').insert(payload);
+      if (error) { alert(t('common.error') + '\n' + error.message); return; }
+      modal.close();
+      load();
+    });
+  }
 
-    const query = id
-      ? supabase.from('blocked_periods').update(payload).eq('id', id)
-      : supabase.from('blocked_periods').insert(payload);
+  function openEdit(bp) {
+    const modal = openFormModal({ title: t('common.edit'), bodyHtml: formBody(bp), submitLabel: t('common.save'), cancelLabel: t('common.cancel') });
+    wireDateLink(modal);
+    modal.submitBtn.addEventListener('click', async () => {
+      const payload = {
+        start_date: modal.body.querySelector('#mf-start').value,
+        end_date: modal.body.querySelector('#mf-end').value,
+        label: modal.body.querySelector('#mf-label').value.trim(),
+        capacity_impact: modal.body.querySelector('#mf-impact').checked,
+      };
+      const { error } = await supabase.from('blocked_periods').update(payload).eq('id', bp.id);
+      if (error) { alert(t('common.error') + '\n' + error.message); return; }
+      modal.close();
+      load();
+    });
+  }
 
-    const { error } = await query;
-    if (error) { alert(t('common.error') + '\n' + error.message); return; }
-    resetForm();
-    load();
-  });
+  document.getElementById('open-add-btn').addEventListener('click', openAdd);
 
   async function load() {
     const tbody = document.getElementById('bp-tbody');
@@ -132,17 +132,7 @@ export async function renderBlocked(container) {
     tbody.querySelectorAll('.edit-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         const id = btn.closest('tr').dataset.id;
-        const bp = bpData.find(x => x.id === id);
-        document.getElementById('f-id').value = bp.id;
-        document.getElementById('f-start').value = bp.start_date;
-        document.getElementById('f-end').value = bp.end_date;
-        document.getElementById('f-end').min = bp.start_date;
-        document.getElementById('f-label').value = bp.label;
-        document.getElementById('f-impact').checked = bp.capacity_impact;
-        submitBtn.textContent = t('common.save');
-        document.getElementById('bp-form-title').textContent = t('common.edit');
-        cancelBtn.hidden = false;
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        openEdit(bpData.find(x => x.id === id));
       });
     });
 

@@ -57,13 +57,17 @@ function buildContinuousSegments(dayInfo, getLabel) {
   return segments;
 }
 
-export async function renderTeamCalendar(container) {
+export async function renderTeamCalendar(container, context) {
+  const myEmployeeId = context && context.employee && context.employee.id;
   let cursor = new Date();
   cursor.setDate(1);
   cursor.setHours(0, 0, 0, 0);
 
   container.innerHTML = `
-    <header><h1>${t('teamCal.title')}</h1></header>
+    <header>
+      <h1>${t('teamCal.title')}</h1>
+      <button type="button" class="btn btn-secondary" id="goto-my-leave-btn" style="margin-top:0.5rem;">${t('teamCal.gotoMyLeave')} →</button>
+    </header>
     <div class="card">
       <div class="cal-toolbar">
         <button type="button" class="btn btn-secondary" id="cal-prev">‹</button>
@@ -85,6 +89,11 @@ export async function renderTeamCalendar(container) {
       </div>
     </div>
   `;
+
+  document.getElementById('goto-my-leave-btn').addEventListener('click', () => {
+    const navBtn = document.querySelector('.nav-item[data-route="my-leave"]');
+    if (navBtn) navBtn.click();
+  });
 
   document.getElementById('cal-prev').addEventListener('click', () => { cursor.setMonth(cursor.getMonth() - 1); load(); });
   document.getElementById('cal-next').addEventListener('click', () => { cursor.setMonth(cursor.getMonth() + 1); load(); });
@@ -205,8 +214,9 @@ export async function renderTeamCalendar(container) {
       bodyHtml += `<tr><td colspan="${2 + daysInMonth}" class="empty-state" style="border:none;">${t('common.none')}</td></tr>`;
     } else {
       sorted.forEach(emp => {
-        bodyHtml += `<tr>
-          <td class="cal-name-col">${escapeHtml(emp.full_name)}</td>
+        const isMe = emp.id === myEmployeeId;
+        bodyHtml += `<tr${isMe ? ' class="cal-my-row"' : ''}>
+          <td class="cal-name-col">${escapeHtml(emp.full_name)}${isMe ? ' 👤' : ''}</td>
           <td class="cal-team-col">${escapeHtml(teamMap.get(emp.team_id) || '–')}</td>
           ${dayInfo.map(di => {
             const leave = leaveOnDay(emp.id, di.date);

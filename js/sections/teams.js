@@ -2,6 +2,7 @@ import { supabase } from '../supabaseClient.js';
 import { t } from '../i18n.js';
 import { ICON_EDIT, ICON_DELETE, iconButton, fieldLabel } from '../icons.js';
 import { createSortState, sortableHeader, wireSortHeaders, sortArray } from '../sortable.js';
+import { openFormModal } from '../modal.js';
 
 export async function renderTeams(container) {
   const sortState = createSortState('name', true);
@@ -10,54 +11,16 @@ export async function renderTeams(container) {
   container.innerHTML = `
     <header><h1>${t('nav.teams')}</h1></header>
     <div class="card">
-      <div class="form-panel-title">${t('common.add')}</div>
-      <form id="team-form">
-        <div class="form-grid">
-          <label>${t('teams.name')}</label>
-          <input type="text" id="f-name" required>
-
-          ${fieldLabel(t('teams.focus'), 'Anteil der Arbeitszeit für Story-Point-Arbeit nach Abzug von Zeremonien/Meetings, als Team-Standard (0–1). Kann pro Mitarbeiter überschrieben werden.')}
-          <input type="number" id="f-focus" min="0" max="1" step="0.01" value="0.8" required class="narrow">
-
-          ${fieldLabel(t('teams.buffer'), 'Anteil der Kapazität, der für ungeplante Arbeit reserviert wird, z. B. Betrieb (0–1). Wird von der Kapazität abgezogen: effektiv = Fokusfaktor × (1 − Puffer).')}
-          <input type="number" id="f-buffer" min="0" max="1" step="0.01" value="0" required class="narrow">
-        </div>
-        <div class="form-actions">
-          <button type="submit" class="btn btn-primary">${t('common.add')}</button>
-        </div>
-      </form>
-    </div>
-
-    <div class="card">
+      <div class="toolbar">
+        <div></div>
+        <button type="button" class="btn btn-primary" id="open-add-btn">${t('common.add')}</button>
+      </div>
       <table>
-        <thead><tr id="teams-thead-row">
-          ${sortableHeader(t('teams.name'), 'name', sortState)}
-          <th class="num">${t('teams.focus')}</th>
-          <th class="num">${t('teams.buffer')}</th>
-          <th></th>
-        </tr></thead>
+        <thead><tr id="teams-thead-row"></tr></thead>
         <tbody id="teams-tbody"><tr><td colspan="4" class="empty-state">${t('common.loading')}</td></tr></tbody>
       </table>
     </div>
   `;
-
-  wireSortHeaders(document.getElementById('teams-thead-row'), sortState, () => {
-    renderRows();
-    refreshHeader();
-  });
-
-  document.getElementById('team-form').addEventListener('submit', async e => {
-    e.preventDefault();
-    const name = document.getElementById('f-name').value.trim();
-    const focus_factor = document.getElementById('f-focus').value;
-    const unplanned_buffer = document.getElementById('f-buffer').value;
-    const { error } = await supabase.from('teams').insert({ name, focus_factor, unplanned_buffer });
-    if (error) { alert(t('common.error') + '\n' + error.message); return; }
-    e.target.reset();
-    document.getElementById('f-focus').value = '0.8';
-    document.getElementById('f-buffer').value = '0';
-    loadTeams();
-  });
 
   function refreshHeader() {
     document.getElementById('teams-thead-row').innerHTML = `
@@ -66,11 +29,66 @@ export async function renderTeams(container) {
       <th class="num">${t('teams.buffer')}</th>
       <th></th>
     `;
-    wireSortHeaders(document.getElementById('teams-thead-row'), sortState, () => {
-      renderRows();
-      refreshHeader();
+    wireSortHeaders(document.getElementById('teams-thead-row'), sortState, () => { renderRows(); refreshHeader(); });
+  }
+  refreshHeader();
+
+  function formBody(team) {
+    return `
+      <div class="form-grid">
+        <label>${t('teams.name')}</label>
+        <input type="text" id="mf-name" required value="${team ? escapeHtml(team.name) : ''}">
+
+        ${fieldLabel(t('teams.focus'), 'Anteil der Arbeitszeit für Story-Point-Arbeit nach Abzug von Zeremonien/Meetings, als Team-Standard (0–1). Kann pro Mitarbeiter überschrieben werden.')}
+        <input type="number" id="mf-focus" min="0" max="1" step="0.01" required value="${team ? team.focus_factor : '0.8'}">
+
+        ${fieldLabel(t('teams.buffer'), 'Anteil der Kapazität, der für ungeplante Arbeit reserviert wird, z. B. Betrieb (0–1). Wird von der Kapazität abgezogen: effektiv = Fokusfaktor × (1 − Puffer).')}
+        <input type="number" id="mf-buffer" min="0" max="1" step="0.01" required value="${team ? team.unplanned_buffer : '0'}">
+      </div>
+    `;
+  }
+
+  function openAdd() {
+    const modal = openFormModal({
+      title: t('common.add'),
+      bodyHtml: formBody(null),
+      submitLabel: t('common.add'),
+      cancelLabel: t('common.cancel'),
+    });
+    modal.submitBtn.addEventListener('click', async () => {
+      const payload = {
+        name: modal.body.querySelector('#mf-name').value.trim(),
+        focus_factor: modal.body.querySelector('#mf-focus').value,
+        unplanned_buffer: modal.body.querySelector('#mf-buffer').value,
+      };
+      const { error } = await supabase.from('teams').insert(payload);
+      if (error) { alert(t('common.error') + '\n' + error.message); return; }
+      modal.close();
+      loadTeams();
     });
   }
+
+  function openEdit(team) {
+    const modal = openFormModal({
+      title: t('common.edit'),
+      bodyHtml: formBody(team),
+      submitLabel: t('common.save'),
+      cancelLabel: t('common.cancel'),
+    });
+    modal.submitBtn.addEventListener('click', async () => {
+      const payload = {
+        name: modal.body.querySelector('#mf-name').value.trim(),
+        focus_factor: modal.body.querySelector('#mf-focus').value,
+        unplanned_buffer: modal.body.querySelector('#mf-buffer').value,
+      };
+      const { error } = await supabase.from('teams').update(payload).eq('id', team.id);
+      if (error) { alert(t('common.error') + '\n' + error.message); return; }
+      modal.close();
+      loadTeams();
+    });
+  }
+
+  document.getElementById('open-add-btn').addEventListener('click', openAdd);
 
   async function loadTeams() {
     const tbody = document.getElementById('teams-tbody');
@@ -111,16 +129,8 @@ export async function renderTeams(container) {
     tbody.querySelectorAll('.edit-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         const row = btn.closest('tr');
-        const team = teamsData.find(t2 => t2.id === row.dataset.id);
-        const newFocus = prompt(t('teams.focus'), team.focus_factor);
-        if (newFocus === null) return;
-        const newBuffer = prompt(t('teams.buffer'), team.unplanned_buffer);
-        if (newBuffer === null) return;
-        supabase.from('teams').update({ focus_factor: newFocus, unplanned_buffer: newBuffer })
-          .eq('id', team.id).then(({ error }) => {
-            if (error) { alert(t('common.error') + '\n' + error.message); return; }
-            loadTeams();
-          });
+        const team = teamsData.find(tm => tm.id === row.dataset.id);
+        openEdit(team);
       });
     });
   }

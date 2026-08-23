@@ -6,9 +6,49 @@
 //
 // Bei jeder Aenderung: APP_VERSION anpassen UND einen neuen Eintrag oben in CHANGELOG ergaenzen.
 
-export const APP_VERSION = '1.19.0';
+export const APP_VERSION = '1.20.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.20.0',
+    date: '2026-08-23',
+    changes: {
+      de: [
+        'Alle "Hinzufügen/Bearbeiten"-Formulare laufen jetzt über ein Pop-up statt inline auf der Seite (Teams, Mitarbeiter, Feiertage, Sperrzeiten, PI & Sprints, Konfidenzband, Rollen-Login-Erstellung)',
+        'Mitarbeiter können jetzt deaktiviert werden (neue "Aktiv"-Checkbox); beim Löschen eines Mitarbeiters mit bestehender Urlaubshistorie wird automatisch "Stattdessen deaktivieren?" angeboten',
+        'Benachrichtigungs-Glocke oben rechts mit Zähler-Badge, öffnet eine Liste aller Benachrichtigungen',
+        'Neue Seite "Audit-Log" (nur Admin): Protokoll aller Änderungen an Urlaubsanträgen',
+        'Passwort selbst ändern: Klick auf den eigenen Namen/Rollen-Block in der Seitenleiste öffnet ein Pop-up dafür',
+        'Zähler-Badge bei "Genehmigungen" zeigt die Anzahl offener Anträge direkt in der Navigation',
+        'Seitenleiste jetzt gruppiert: Urlaub / Verwaltung / Sonstiges',
+        'Mein Urlaub und Team-Kalender gegenseitig verlinkt; die eigene Zeile ist im Team-Kalender optisch hervorgehoben',
+        'E-Mail-Adressen von Mitarbeitern müssen jetzt eindeutig sein (Datenbank-Regel)',
+      ],
+      en: [
+        'All "add/edit" forms now open as a pop-up instead of inline on the page (teams, employees, holidays, blocked periods, PI & sprints, confidence band, roles login creation)',
+        'Employees can now be deactivated (new "Active" checkbox); deleting an employee with existing leave history now offers "Deactivate instead?" automatically',
+        'Notification bell in the top-right corner with a count badge, opens a list of all notifications',
+        'New "Audit log" page (admin only): record of all changes to leave requests',
+        'Change your own password: click your name/role block in the sidebar to open a dialog for it',
+        'Count badge on "Approvals" shows the number of open requests directly in the navigation',
+        'Sidebar is now grouped: Leave / Administration / Other',
+        'My Leave and Team Calendar are cross-linked; your own row is visually highlighted in the team calendar',
+        'Employee email addresses must now be unique (database rule)',
+      ],
+    },
+  },
+  {
+    version: '1.19.1',
+    date: '2026-08-23',
+    changes: {
+      de: [
+        '"Abmelden" in der Seitenleiste jetzt rot-pink eingefärbt, damit er sich von den übrigen Menüpunkten abhebt',
+      ],
+      en: [
+        '"Sign out" in the sidebar is now colored red-pink to stand out from the other nav items',
+      ],
+    },
+  },
   {
     version: '1.19.0',
     date: '2026-08-23',

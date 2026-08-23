@@ -15,8 +15,11 @@ import { renderChangelog } from './sections/changelog.js';
 import { renderMyLeave } from './sections/myLeave.js';
 import { renderApprovals } from './sections/approvals.js';
 import { renderTeamCalendar } from './sections/teamCalendar.js';
+import { renderAuditLog } from './sections/auditLog.js';
 import { APP_VERSION } from './version.js';
 import { ROLE_DEFINITIONS, ALL_ROLE_KEYS } from './roleDefinitions.js';
+import { openFormModal } from './modal.js';
+import { initNotifications, refreshBadge } from './notifications.js';
 
 const routes = {
   dashboard: renderDashboard,
@@ -32,6 +35,7 @@ const routes = {
   'my-leave': renderMyLeave,
   approvals: renderApprovals,
   'team-calendar': renderTeamCalendar,
+  'audit-log': renderAuditLog,
 };
 
 const loginScreen = document.getElementById('login-screen');
@@ -41,6 +45,29 @@ const mainContent = document.getElementById('main-content');
 
 let currentRoles = new Set();
 let currentEmployee = null;
+
+async function refreshApprovalsBadge() {
+  const btn = document.querySelector('.nav-item[data-route="approvals"]');
+  if (!btn || btn.hidden) return;
+  if (!(currentRoles.has('stufe2_genehmiger') || currentRoles.has('admin'))) return;
+
+  const { count } = await supabase
+    .from('leave_requests')
+    .select('id', { count: 'exact', head: true })
+    .eq('status', 'beantragt');
+
+  let badge = btn.querySelector('.nav-badge');
+  if (!count || count === 0) {
+    if (badge) badge.remove();
+    return;
+  }
+  if (!badge) {
+    badge = document.createElement('span');
+    badge.className = 'nav-badge';
+    btn.appendChild(badge);
+  }
+  badge.textContent = count > 9 ? '9+' : String(count);
+}
 
 function setActiveNav(route) {
   document.querySelectorAll('.nav-item[data-route]').forEach(btn => {
@@ -52,6 +79,7 @@ async function navigate(route) {
   setActiveNav(route);
   const renderFn = routes[route] || routes['my-leave'];
   await renderFn(mainContent, { employee: currentEmployee, roles: currentRoles });
+  refreshApprovalsBadge();
 }
 
 function applyRoleVisibility() {
@@ -67,6 +95,9 @@ function applyRoleVisibility() {
     } else {
       btn.hidden = false;
     }
+  });
+  document.querySelectorAll('.nav-group-label[data-requires]').forEach(el => {
+    el.hidden = !currentRoles.has(el.dataset.requires);
   });
 }
 
@@ -116,7 +147,9 @@ async function showApp() {
   applyTranslations();
   document.getElementById('sidebar-version').textContent = 'v' + APP_VERSION;
   renderSidebarUser();
+  initNotifications(currentEmployee.id, () => navigate('my-leave'));
   await navigate(defaultRoute());
+  setInterval(() => { refreshBadge(); refreshApprovalsBadge(); }, 60000);
 }
 
 function renderSidebarUser() {
@@ -130,6 +163,54 @@ function renderSidebarUser() {
     <div class="sidebar-user-name">${escapeHtml(currentEmployee.full_name)}</div>
     <div class="sidebar-user-role">${escapeHtml(roleText)}</div>
   `;
+  el.style.cursor = 'pointer';
+  el.title = t('account.changePassword');
+  el.onclick = openPasswordModal;
+}
+
+function openPasswordModal() {
+  const modal = openFormModal({
+    title: t('account.title'),
+    bodyHtml: `
+      <div class="form-grid">
+        <label>${t('forcePw.new')}</label>
+        <input type="password" id="mf-new-pw" required minlength="8" autocomplete="new-password">
+        <label>${t('forcePw.confirm')}</label>
+        <input type="password" id="mf-confirm-pw" required minlength="8" autocomplete="new-password">
+      </div>
+      <p id="mf-pw-error" class="error-text" hidden></p>
+    `,
+    submitLabel: t('account.changePassword'),
+    cancelLabel: t('common.cancel'),
+  });
+
+  modal.submitBtn.addEventListener('click', async () => {
+    const errEl = modal.body.querySelector('#mf-pw-error');
+    errEl.hidden = true;
+    const newPw = modal.body.querySelector('#mf-new-pw').value;
+    const confirmPw = modal.body.querySelector('#mf-confirm-pw').value;
+
+    if (newPw !== confirmPw) {
+      errEl.textContent = t('forcePw.mismatch');
+      errEl.hidden = false;
+      return;
+    }
+    if (newPw.length < 8) {
+      errEl.textContent = t('forcePw.tooShort');
+      errEl.hidden = false;
+      return;
+    }
+
+    const { error } = await supabase.auth.updateUser({ password: newPw });
+    if (error) {
+      errEl.textContent = error.message;
+      errEl.hidden = false;
+      return;
+    }
+
+    modal.close();
+    alert(t('common.saved'));
+  });
 }
 
 function escapeHtml(str) {
