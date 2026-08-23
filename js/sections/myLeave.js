@@ -197,8 +197,14 @@ export async function renderMyLeave(container, context) {
         }
       }
 
+      if (lr.status === 'storniert') {
+        actions += iconButton(ICON_DELETE, t('common.delete'), 'delete-storniert-btn');
+      }
+
+      const isPastFinal = lr.status === 'final_gebucht' && lr.end_date < todayISO;
+
       return `
-        <tr data-id="${lr.id}" data-start="${lr.start_date}" data-end="${lr.end_date}">
+        <tr data-id="${lr.id}" data-start="${lr.start_date}" data-end="${lr.end_date}" class="${isPastFinal ? 'row-past' : ''}">
           <td class="mono">${formatDate(lr.start_date)} – ${formatDate(lr.end_date)}</td>
           <td><span class="badge ${meta.cls}">${t('myLeave.status.' + lr.status) || meta.label}</span></td>
           <td>${escapeHtml(lr.comment_stufe2 || '')}</td>
@@ -207,6 +213,16 @@ export async function renderMyLeave(container, context) {
         </tr>
       `;
     }).join('');
+
+    tbody.querySelectorAll('.delete-storniert-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        if (!confirm(t('myLeave.deleteStornoConfirm'))) return;
+        const id = btn.closest('tr').dataset.id;
+        const { error } = await supabase.from('leave_requests').delete().eq('id', id);
+        if (error) { alert(t('common.error') + '\n' + error.message); return; }
+        load();
+      });
+    });
 
     tbody.querySelectorAll('.withdraw-btn').forEach(btn => {
       btn.addEventListener('click', async () => {

@@ -6,9 +6,25 @@
 //
 // Bei jeder Aenderung: APP_VERSION anpassen UND einen neuen Eintrag oben in CHANGELOG ergaenzen.
 
-export const APP_VERSION = '1.16.0';
+export const APP_VERSION = '1.16.1';
 
 export const CHANGELOG = [
+  {
+    version: '1.16.1',
+    date: '2026-08-23',
+    changes: {
+      de: [
+        'Fehlerbehebung: Stornierte/vergangene Anträge liessen sich nicht löschen (Fremdschlüssel-Konflikt mit Benachrichtigungen) - Datenbank-Regeln korrigiert',
+        'Mein Urlaub: vergangene "Final gebucht"-Einträge werden jetzt grau hinterlegt dargestellt',
+        'Mein Urlaub: stornierte Einträge können vom Mitarbeiter selbst im Nachhinein gelöscht werden',
+      ],
+      en: [
+        'Bug fix: cancelled/past requests could not be deleted (foreign key conflict with notifications) - database rules corrected',
+        'My Leave: past "final booked" entries are now shown greyed out',
+        'My Leave: cancelled entries can now be deleted afterward by the employee themselves',
+      ],
+    },
+  },
   {
     version: '1.16.0',
     date: '2026-08-23',
