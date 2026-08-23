@@ -6,9 +6,33 @@
 //
 // Bei jeder Aenderung: APP_VERSION anpassen UND einen neuen Eintrag oben in CHANGELOG ergaenzen.
 
-export const APP_VERSION = '1.14.0';
+export const APP_VERSION = '1.15.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.15.0',
+    date: '2026-08-23',
+    changes: {
+      de: [
+        '"Final bestätigen" darf jetzt ausschliesslich der Mitarbeiter selbst - manuelle Admin/Stufe-2-Funktion entfernt (auch auf Datenbank-Ebene korrigiert)',
+        'Fehlende Berechtigung nachgetragen: Selbstbestätigung durch den Mitarbeiter hatte technisch noch gar keine passende Datenbank-Regel',
+        'Neues Bestätigungs-Modal statt Browser-Dialog bei "Final bestätigen" (Text passt sich an intern/extern an) und bei "Stornieren"',
+        'Genehmigungen: Zeilen wieder gleich hoch, kein Alignment-Versatz mehr (durch Entfernen der zu grossen Buttons)',
+        'Team-Kalender: Wochenend-Spalten jetzt durchgehend eingefärbt, nicht nur im Kopf',
+        'Team-Kalender: Status-Zellen zeigen zusätzlich Kürzel (BE/PL/FG)',
+        'Team-Kalender: zwei neue Kopfzeilen zeigen PI und Sprint über dem sichtbaren Zeitraum',
+      ],
+      en: [
+        '"Confirm final" is now exclusively the employee\'s own action - removed the manual admin/level-2 function (fixed at the database level too)',
+        'Added a missing permission: the employee\'s own self-confirmation technically had no matching database rule yet',
+        'New confirmation modal instead of the browser dialog for "Confirm final" (text adapts to internal/external) and for "Cancel"',
+        'Approvals: rows are uniform height again, no more alignment offset (fixed by removing the oversized buttons)',
+        'Team calendar: weekend columns are now shaded all the way down, not just in the header',
+        'Team calendar: status cells now also show a short code (BE/PL/FG)',
+        'Team calendar: two new header rows show the PI and sprint above the visible range',
+      ],
+    },
+  },
   {
     version: '1.14.0',
     date: '2026-08-23',

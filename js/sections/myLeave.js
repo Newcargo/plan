@@ -2,6 +2,7 @@ import { supabase } from '../supabaseClient.js';
 import { t } from '../i18n.js';
 import { ICON_DELETE, iconButton, fieldLabel } from '../icons.js';
 import { formatDate } from '../dateFormat.js';
+import { showConfirmModal } from '../modal.js';
 
 const STATUS_META = {
   beantragt: { label: 'Beantragt', cls: 'badge-warn' },
@@ -214,7 +215,13 @@ export async function renderMyLeave(container, context) {
 
     tbody.querySelectorAll('.confirm-final-btn').forEach(btn => {
       btn.addEventListener('click', async () => {
-        if (!confirm(t('myLeave.confirmFinalConfirm'))) return;
+        const ok = await showConfirmModal({
+          title: t('myLeave.confirmFinalModalTitle'),
+          message: isExternal ? t('myLeave.confirmFinalModalMessageExtern') : t('myLeave.confirmFinalModalMessageIntern'),
+          confirmLabel: t('myLeave.confirmFinalModalConfirm'),
+          cancelLabel: t('common.cancel'),
+        });
+        if (!ok) return;
         const id = btn.closest('tr').dataset.id;
         const { error } = await supabase.from('leave_requests').update({ status: 'final_gebucht' }).eq('id', id);
         if (error) { alert(t('common.error') + '\n' + error.message); return; }
@@ -224,7 +231,13 @@ export async function renderMyLeave(container, context) {
 
     tbody.querySelectorAll('.storno-btn').forEach(btn => {
       btn.addEventListener('click', async () => {
-        if (!confirm(t('myLeave.stornoConfirm'))) return;
+        const ok = await showConfirmModal({
+          title: t('myLeave.storno'),
+          message: t('myLeave.stornoConfirm'),
+          confirmLabel: t('myLeave.storno'),
+          cancelLabel: t('common.cancel'),
+        });
+        if (!ok) return;
         const id = btn.closest('tr').dataset.id;
         const { error } = await supabase.from('leave_requests').update({ status: 'storniert' }).eq('id', id);
         if (error) { alert(t('common.error') + '\n' + error.message); return; }

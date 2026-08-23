@@ -3,13 +3,31 @@ import { t } from '../i18n.js';
 import { formatMonthYear } from '../dateFormat.js';
 
 const STATUS_COLORS = {
-  beantragt: '#E0A400',
-  genehmigt_projekt: '#2F6FED',
-  final_gebucht: '#1E9E6B',
+  beantragt: { bg: '#E0A400', text: '#000', code: 'BE' },
+  genehmigt_projekt: { bg: '#2F6FED', text: '#fff', code: 'PL' },
+  final_gebucht: { bg: '#1E9E6B', text: '#fff', code: 'FG' },
 };
+
+const WEEKEND_BG = '#EDEFF2';
 
 function toISO(date) {
   return date.toISOString().slice(0, 10);
+}
+
+// Gruppiert aufeinanderfolgende Tage mit demselben Label zu einer Zelle (colspan),
+// fuer die PI- und Sprint-Kopfzeilen.
+function buildSegments(dayInfo, getLabel) {
+  const segments = [];
+  dayInfo.forEach(di => {
+    const label = getLabel(di) || '';
+    const last = segments[segments.length - 1];
+    if (last && last.label === label) {
+      last.colspan++;
+    } else {
+      segments.push({ label, colspan: 1 });
+    }
+  });
+  return segments;
 }
 
 export async function renderTeamCalendar(container) {
@@ -30,12 +48,12 @@ export async function renderTeamCalendar(container) {
         <table class="cal-table" id="cal-table"></table>
       </div>
       <div class="cal-legend">
-        <span><span class="swatch" style="background:${STATUS_COLORS.beantragt};"></span>${t('myLeave.status.beantragt')}</span>
-        <span><span class="swatch" style="background:${STATUS_COLORS.genehmigt_projekt};"></span>${t('myLeave.status.genehmigt_projekt')}</span>
-        <span><span class="swatch" style="background:${STATUS_COLORS.final_gebucht};"></span>${t('myLeave.status.final_gebucht')}</span>
+        <span><span class="swatch" style="background:${STATUS_COLORS.beantragt.bg};"></span>BE = ${t('myLeave.status.beantragt')}</span>
+        <span><span class="swatch" style="background:${STATUS_COLORS.genehmigt_projekt.bg};"></span>PL = ${t('myLeave.status.genehmigt_projekt')}</span>
+        <span><span class="swatch" style="background:${STATUS_COLORS.final_gebucht.bg};"></span>FG = ${t('myLeave.status.final_gebucht')}</span>
         <span><span class="swatch" style="background:#E6E0F8;"></span>${t('teamCal.legendHoliday')}</span>
         <span><span class="swatch" style="background:#FBE7EA;"></span>${t('teamCal.legendBlocked')}</span>
-        <span><span class="swatch" style="background:var(--bg); border:1px solid var(--border);"></span>${t('teamCal.legendWeekend')}</span>
+        <span><span class="swatch" style="background:${WEEKEND_BG}; border:1px solid var(--border);"></span>${t('teamCal.legendWeekend')}</span>
       </div>
     </div>
   `;
@@ -62,12 +80,14 @@ export async function renderTeamCalendar(container) {
     const daysInMonth = monthEnd.getDate();
     const todayISO = toISO(new Date());
 
-    const [teamsRes, employeesRes, leaveRes, holidaysRes, blockedRes] = await Promise.all([
+    const [teamsRes, employeesRes, leaveRes, holidaysRes, blockedRes, sprintsRes, pisRes] = await Promise.all([
       supabase.from('teams').select('id, name').order('name'),
       supabase.from('employees').select('id, full_name, team_id').eq('active', true),
       supabase.from('v_leave_calendar').select('employee_id, start_date, end_date, status').lte('start_date', monthEndISO).gte('end_date', monthStartISO),
       supabase.from('holidays').select('date, name').gte('date', monthStartISO).lte('date', monthEndISO),
       supabase.from('blocked_periods').select('start_date, end_date, label').lte('start_date', monthEndISO).gte('end_date', monthStartISO),
+      supabase.from('sprints').select('id, pi_id, sprint_number, name, start_date, end_date').lte('start_date', monthEndISO).gte('end_date', monthStartISO),
+      supabase.from('program_increments').select('id, name'),
     ]);
 
     const teams = teamsRes.data || [];
@@ -75,16 +95,20 @@ export async function renderTeamCalendar(container) {
     const leaves = leaveRes.data || [];
     const holidays = holidaysRes.data || [];
     const blocked = blockedRes.data || [];
+    const sprints = sprintsRes.data || [];
+    const pis = pisRes.data || [];
+    const piMap = new Map(pis.map(pi => [pi.id, pi.name]));
 
     const teamMap = new Map(teams.map(tm => [tm.id, tm.name]));
 
-    // Tages-Infos vorab berechnen (Feiertag / Sperrzeit / Wochenende)
+    // Tages-Infos vorab berechnen (Feiertag / Sperrzeit / Wochenende / PI / Sprint)
     const dayInfo = [];
     for (let d = 1; d <= daysInMonth; d++) {
       const dt = new Date(cursor.getFullYear(), cursor.getMonth(), d);
       const iso = toISO(dt);
       const holiday = holidays.find(h => h.date === iso);
       const blockedHit = blocked.find(bp => bp.start_date <= iso && bp.end_date >= iso);
+      const sprintHit = sprints.find(s => s.start_date <= iso && s.end_date >= iso);
       dayInfo.push({
         date: iso,
         dayNum: d,
@@ -92,6 +116,7 @@ export async function renderTeamCalendar(container) {
         isWeekend: dt.getDay() === 0 || dt.getDay() === 6,
         holiday: holiday ? holiday.name : null,
         blocked: blockedHit ? blockedHit.label : null,
+        sprint: sprintHit || null,
       });
     }
 
@@ -121,11 +146,27 @@ export async function renderTeamCalendar(container) {
     const lang = document.documentElement.lang === 'en' ? 'en' : 'de';
     const wd = weekdayLetters[lang];
 
-    let headHtml = `<thead><tr>
-      <th class="cal-name-col">${t('employees.fullName')}</th>
-      <th class="cal-team-col">${t('employees.team')}</th>
-      ${dayInfo.map(di => `<th class="cal-day-col${di.isWeekend ? ' weekend' : ''}${di.date === todayISO ? ' today' : ''}" title="${di.holiday ? escapeHtml(di.holiday) : ''}${di.blocked ? ' ' + escapeHtml(di.blocked) : ''}">${di.dayNum}<br>${wd[di.weekday]}</th>`).join('')}
-    </tr></thead>`;
+    // PI- und Sprint-Kopfzeilen: aufeinanderfolgende Tage mit gleicher PI/gleichem Sprint zusammenfassen
+    const piSegments = buildSegments(dayInfo, di => di.sprint ? (piMap.get(di.sprint.pi_id) || '') : '');
+    const sprintSegments = buildSegments(dayInfo, di => di.sprint ? (di.sprint.name || ('Sprint ' + di.sprint.sprint_number)) : '');
+
+    let headHtml = `<thead>
+      <tr>
+        <th class="cal-name-col" style="border-bottom:none;"></th>
+        <th class="cal-team-col" style="border-bottom:none;"></th>
+        ${piSegments.map(seg => `<th colspan="${seg.colspan}" style="font-size:0.68rem; color:var(--text-muted); font-weight:600;">${escapeHtml(seg.label)}</th>`).join('')}
+      </tr>
+      <tr>
+        <th class="cal-name-col" style="border-bottom:none; border-top:none;"></th>
+        <th class="cal-team-col" style="border-bottom:none; border-top:none;"></th>
+        ${sprintSegments.map(seg => `<th colspan="${seg.colspan}" style="font-size:0.65rem; color:var(--text-muted); font-weight:500; border-top:none;">${escapeHtml(seg.label)}</th>`).join('')}
+      </tr>
+      <tr>
+        <th class="cal-name-col">${t('employees.fullName')}</th>
+        <th class="cal-team-col">${t('employees.team')}</th>
+        ${dayInfo.map(di => `<th class="cal-day-col${di.isWeekend ? ' weekend' : ''}${di.date === todayISO ? ' today' : ''}" title="${di.holiday ? escapeHtml(di.holiday) : ''}${di.blocked ? ' ' + escapeHtml(di.blocked) : ''}">${di.dayNum}<br>${wd[di.weekday]}</th>`).join('')}
+      </tr>
+    </thead>`;
 
     let bodyHtml = '<tbody>';
     if (!sorted.length) {
@@ -138,9 +179,13 @@ export async function renderTeamCalendar(container) {
           ${dayInfo.map(di => {
             const status = statusOnDay(emp.id, di.date);
             let bg = '';
+            let textColor = '';
+            let code = '';
             let title = '';
             if (status && STATUS_COLORS[status]) {
-              bg = STATUS_COLORS[status];
+              bg = STATUS_COLORS[status].bg;
+              textColor = STATUS_COLORS[status].text;
+              code = STATUS_COLORS[status].code;
               title = t('myLeave.status.' + status);
             } else if (di.blocked) {
               bg = '#FBE7EA';
@@ -149,9 +194,10 @@ export async function renderTeamCalendar(container) {
               bg = '#E6E0F8';
               title = di.holiday;
             } else if (di.isWeekend) {
-              bg = '';
+              bg = WEEKEND_BG;
             }
-            return `<td class="cal-cell" style="${bg ? `background:${bg};` : ''}" title="${escapeHtml(title)}"></td>`;
+            const style = `${bg ? `background:${bg};` : ''}${textColor ? `color:${textColor};` : ''}`;
+            return `<td class="cal-cell" style="${style}" title="${escapeHtml(title)}">${code}</td>`;
           }).join('')}
         </tr>`;
       });
