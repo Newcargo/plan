@@ -17,8 +17,8 @@ export async function renderSettings(container) {
         ${fieldLabel(t('roles.blocked') + ' – Kontaktperson (Name, keine E-Mail)', 'Name, der gesperrten Mitarbeitenden beim Login-Versuch angezeigt wird, an wen sie sich wenden sollen. Bewusst nur ein Name, keine E-Mail-Adresse.')}
         <input type="text" id="f-blocked-contact">
 
-        ${fieldLabel(t('settings.ppmEmail'), 'E-Mail-Adresse des People Pool Managers. Wird als Empfänger im vorausgefüllten Mail-Entwurf für externe Kollegen verwendet.')}
-        <input type="email" id="f-ppm-email">
+        ${fieldLabel(t('settings.reminderDays'), 'Ab wie vielen Werktagen ein offener Antrag in der Genehmigungs-Ansicht als "wartet lange" hervorgehoben wird.')}
+        <input type="number" id="f-reminder-days" min="1" step="1" class="narrow">
       </div>
       <div class="form-actions" style="justify-content:flex-start;align-items:center;">
         <button id="save-btn" class="btn btn-primary">${t('common.save')}</button>
@@ -49,13 +49,13 @@ export async function renderSettings(container) {
   document.getElementById('f-window').value = map.get('velocity_rolling_window') ?? 3;
   document.getElementById('f-sprintcount').value = map.get('default_pi_sprint_count') ?? 5;
   document.getElementById('f-blocked-contact').value = map.get('blocked_contact_name') ?? 'Admin';
-  document.getElementById('f-ppm-email').value = map.get('people_pool_manager_email') ?? '';
+  document.getElementById('f-reminder-days').value = map.get('reminder_business_days') ?? 5;
 
   document.getElementById('save-btn').addEventListener('click', async () => {
     const windowVal = Number(document.getElementById('f-window').value);
     const sprintCountVal = Number(document.getElementById('f-sprintcount').value);
     const contactName = document.getElementById('f-blocked-contact').value.trim() || 'Admin';
-    const ppmEmail = document.getElementById('f-ppm-email').value.trim();
+    const reminderDays = Number(document.getElementById('f-reminder-days').value);
 
     const { error: e1 } = await supabase.from('app_config').upsert(
       { key: 'velocity_rolling_window', value: windowVal }, { onConflict: 'key' }
@@ -67,7 +67,7 @@ export async function renderSettings(container) {
       { key: 'blocked_contact_name', value: contactName }, { onConflict: 'key' }
     );
     const { error: e4 } = await supabase.from('app_config').upsert(
-      { key: 'people_pool_manager_email', value: ppmEmail }, { onConflict: 'key' }
+      { key: 'reminder_business_days', value: reminderDays }, { onConflict: 'key' }
     );
 
     const msg = document.getElementById('save-msg');

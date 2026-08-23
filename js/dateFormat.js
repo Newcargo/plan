@@ -24,3 +24,22 @@ export function formatDate(isoDateString, lang) {
 
   return `${weekday} ${dd}.${mm}.${yyyy}`;
 }
+
+// Anzahl Werktage (Mo-Fr) seit einem gegebenen Zeitpunkt bis jetzt.
+// Wird fuer die "wartet seit X Werktagen"-Hervorhebung in der Genehmigungs-Ansicht verwendet.
+export function businessDaysSince(fromDateString) {
+  const from = new Date(fromDateString);
+  const now = new Date();
+  let count = 0;
+  const cursor = new Date(from);
+  cursor.setHours(0, 0, 0, 0);
+  const today = new Date(now);
+  today.setHours(0, 0, 0, 0);
+  cursor.setDate(cursor.getDate() + 1);
+  while (cursor <= today) {
+    const day = cursor.getDay();
+    if (day !== 0 && day !== 6) count++;
+    cursor.setDate(cursor.getDate() + 1);
+  }
+  return count;
+}

@@ -7,9 +7,8 @@ const STATUS_META = {
   beantragt: { label: 'Beantragt', cls: 'badge-warn' },
   genehmigt_projekt: { label: 'Genehmigt (Projektleitung)', cls: 'badge-info' },
   abgelehnt: { label: 'Abgelehnt', cls: 'badge-danger' },
-  bei_ruag_office: { label: 'Bei RUAG Office', cls: 'badge-info' },
   final_gebucht: { label: 'Final gebucht', cls: 'badge-success' },
-  stornierungsantrag: { label: 'Änderung beantragt', cls: 'badge-muted' },
+  storniert: { label: 'Storniert', cls: 'badge-muted' },
 };
 
 export async function renderMyLeave(container, context) {
@@ -21,13 +20,9 @@ export async function renderMyLeave(container, context) {
 
   let leaveData = [];
   let isExternal = false;
-  let ppmEmail = '';
 
   const { data: empDetail } = await supabase.from('employees').select('is_external').eq('id', employee.id).maybeSingle();
   isExternal = !!(empDetail && empDetail.is_external);
-
-  const { data: cfg } = await supabase.from('app_config').select('value').eq('key', 'people_pool_manager_email').maybeSingle();
-  ppmEmail = (cfg && cfg.value) || '';
 
   container.innerHTML = `
     <header><h1>${t('myLeave.title')}</h1></header>
@@ -122,6 +117,24 @@ export async function renderMyLeave(container, context) {
       return;
     }
 
+    // Ueberlappungspruefung gegen eigene bestehende (aktive) Antraege - harte Sperre
+    const { data: ownActive } = await supabase
+      .from('leave_requests')
+      .select('start_date, end_date')
+      .eq('employee_id', employee.id)
+      .not('status', 'in', '(abgelehnt,storniert)')
+      .lte('start_date', end)
+      .gte('end_date', start);
+
+    if (ownActive && ownActive.length) {
+      const conflict = ownActive[0];
+      msg.textContent = t('myLeave.overlapError')
+        .replace('{start}', formatDate(conflict.start_date))
+        .replace('{end}', formatDate(conflict.end_date));
+      msg.hidden = false;
+      return;
+    }
+
     const { error } = await supabase.from('leave_requests').insert({
       employee_id: employee.id,
       start_date: start,
@@ -159,32 +172,24 @@ export async function renderMyLeave(container, context) {
 
     tbody.innerHTML = leaveData.map(lr => {
       const meta = STATUS_META[lr.status] || { label: lr.status, cls: 'badge-muted' };
-      const canWithdraw = lr.status === 'beantragt';
 
       let actions = '';
-      if (canWithdraw) {
+      if (lr.status === 'beantragt') {
         actions += iconButton(ICON_DELETE, t('myLeave.withdraw'), 'withdraw-btn');
       }
-      if (lr.status === 'genehmigt_projekt' && isExternal) {
-        const subject = encodeURIComponent(t('myLeave.mailSubject').replace('{name}', employee.full_name));
-        const body = encodeURIComponent(
-          t('myLeave.mailBody')
-            .replace('{name}', employee.full_name)
-            .replace('{start}', formatDate(lr.start_date))
-            .replace('{end}', formatDate(lr.end_date))
-        );
-        const mailtoHref = `mailto:${encodeURIComponent(ppmEmail)}?subject=${subject}&body=${body}`;
-        actions += `<a href="${mailtoHref}" class="btn btn-secondary" style="text-decoration:none;">${t('myLeave.sendMail')}</a>`;
+      if (lr.status === 'abgelehnt') {
+        actions += `<button type="button" class="btn btn-secondary reapply-btn">${t('myLeave.reapply')}</button>`;
       }
-      if (lr.status === 'genehmigt_projekt' && !isExternal) {
+      if (lr.status === 'genehmigt_projekt') {
         actions += `<button type="button" class="btn btn-secondary confirm-final-btn">${t('myLeave.confirmFinal')}</button>`;
+        actions += `<button type="button" class="btn btn-danger storno-btn">${t('myLeave.storno')}</button>`;
       }
-      if (lr.status === 'bei_ruag_office') {
-        actions += `<button type="button" class="btn btn-secondary confirm-final-btn">${t('myLeave.confirmFinal')}</button>`;
+      if (lr.status === 'final_gebucht') {
+        actions += `<button type="button" class="btn btn-danger storno-btn">${t('myLeave.storno')}</button>`;
       }
 
       return `
-        <tr data-id="${lr.id}">
+        <tr data-id="${lr.id}" data-start="${lr.start_date}" data-end="${lr.end_date}">
           <td class="mono">${formatDate(lr.start_date)} – ${formatDate(lr.end_date)}</td>
           <td><span class="badge ${meta.cls}">${t('myLeave.status.' + lr.status) || meta.label}</span></td>
           <td>${escapeHtml(lr.comment_stufe2 || '')}</td>
@@ -193,6 +198,16 @@ export async function renderMyLeave(container, context) {
         </tr>
       `;
     }).join('');
+
+    tbody.querySelectorAll('.withdraw-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        if (!confirm(t('myLeave.withdrawConfirm'))) return;
+        const id = btn.closest('tr').dataset.id;
+        const { error } = await supabase.from('leave_requests').delete().eq('id', id);
+        if (error) { alert(t('common.error') + '\n' + error.message); return; }
+        load();
+      });
+    });
 
     tbody.querySelectorAll('.confirm-final-btn').forEach(btn => {
       btn.addEventListener('click', async () => {
@@ -204,13 +219,23 @@ export async function renderMyLeave(container, context) {
       });
     });
 
-    tbody.querySelectorAll('.withdraw-btn').forEach(btn => {
+    tbody.querySelectorAll('.storno-btn').forEach(btn => {
       btn.addEventListener('click', async () => {
-        if (!confirm(t('myLeave.withdrawConfirm'))) return;
+        if (!confirm(t('myLeave.stornoConfirm'))) return;
         const id = btn.closest('tr').dataset.id;
-        const { error } = await supabase.from('leave_requests').delete().eq('id', id);
+        const { error } = await supabase.from('leave_requests').update({ status: 'storniert' }).eq('id', id);
         if (error) { alert(t('common.error') + '\n' + error.message); return; }
         load();
+      });
+    });
+
+    tbody.querySelectorAll('.reapply-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const row = btn.closest('tr');
+        startInput.value = row.dataset.start;
+        endInput.value = row.dataset.end;
+        checkOverlaps();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
       });
     });
   }

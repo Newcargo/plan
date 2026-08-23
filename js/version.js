@@ -6,9 +6,37 @@
 //
 // Bei jeder Aenderung: APP_VERSION anpassen UND einen neuen Eintrag oben in CHANGELOG ergaenzen.
 
-export const APP_VERSION = '1.12.0';
+export const APP_VERSION = '1.13.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.13.0',
+    date: '2026-08-23',
+    changes: {
+      de: [
+        'Urlaubs-Workflow grundlegend vereinfacht (gemeinsam am Whiteboard erarbeitet)',
+        'Status "Bei RUAG Office" entfällt komplett - kein Zwischenschritt mehr nötig',
+        'People Pool Manager: nur noch reine Leseansicht (alle Anträge, intern + extern), keine eigene Aktion mehr im System',
+        'Mailto-Funktion und die zugehörige Einstellung "E-Mail People Pool Manager" entfernt, werden nicht mehr gebraucht',
+        'Stornieren jetzt bereits ab "Genehmigt (Projektleitung)" möglich (nicht erst ab "Final gebucht") - sofort, ohne Genehmigung, mit Hinweis auf externe Stornierung (Fiori-SAP/RUAG Office)',
+        '"Erneut beantragen"-Button bei abgelehnten Anträgen, übernimmt Start-/Enddatum in ein neues Antragsformular',
+        'Harte Überlappungssperre: neue Anträge dürfen sich nicht mit eigenen bestehenden (aktiven) Anträgen überschneiden',
+        'Genehmigungs-Ansicht hebt offene Anträge hervor, die 5 Werktage oder länger unbearbeitet sind (Schwellenwert einstellbar)',
+        'Admin/Stufe-2-Genehmiger können "Final gebucht" jetzt auch manuell für einen Mitarbeiter setzen',
+      ],
+      en: [
+        'Leave workflow fundamentally simplified (worked out together on a whiteboard)',
+        'The "With RUAG Office" status is gone entirely - no more intermediate step',
+        'People Pool Manager: now a pure read-only view (all requests, internal + external), no action in the system anymore',
+        'Removed the mailto feature and the related "People Pool Manager email" setting, no longer needed',
+        'Cancelling is now possible already from "Approved (project lead)" (not only from "Final booked") - immediate, no approval needed, with a hint about cancelling externally too (Fiori-SAP/RUAG Office)',
+        '"Reapply" button on rejected requests, carries the start/end dates into a new request form',
+        'Hard overlap block: new requests cannot overlap the employee\'s own existing active requests',
+        'Approvals view highlights pending requests that have been open 5 business days or longer (threshold configurable)',
+        'Admin/level-2 approvers can now also manually set "final booked" for an employee',
+      ],
+    },
+  },
   {
     version: '1.12.0',
     date: '2026-08-21',
