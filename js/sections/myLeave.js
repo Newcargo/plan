@@ -174,6 +174,8 @@ export async function renderMyLeave(container, context) {
     const tbody = document.getElementById('leave-tbody');
     if (!leaveData.length) { tbody.innerHTML = `<tr><td colspan="5" class="empty-state">${t('common.none')}</td></tr>`; return; }
 
+    const todayISO = new Date().toISOString().slice(0, 10);
+
     tbody.innerHTML = leaveData.map(lr => {
       const meta = STATUS_META[lr.status] || { label: lr.status, cls: 'badge-muted' };
 
@@ -189,7 +191,10 @@ export async function renderMyLeave(container, context) {
         actions += `<button type="button" class="btn btn-danger storno-btn">${t('myLeave.storno')}</button>`;
       }
       if (lr.status === 'final_gebucht') {
-        actions += `<button type="button" class="btn btn-danger storno-btn">${t('myLeave.storno')}</button>`;
+        const isPast = lr.end_date < todayISO;
+        if (!isPast) {
+          actions += `<button type="button" class="btn btn-danger storno-btn">${t('myLeave.storno')}</button>`;
+        }
       }
 
       return `

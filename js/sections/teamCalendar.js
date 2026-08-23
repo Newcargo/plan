@@ -9,13 +9,14 @@ const STATUS_COLORS = {
 };
 
 const WEEKEND_BG = '#EDEFF2';
+const PI_SPRINT_COLOR = '#B8E8E0';
 
 function toISO(date) {
   return date.toISOString().slice(0, 10);
 }
 
 // Gruppiert aufeinanderfolgende Tage mit demselben Label zu einer Zelle (colspan),
-// fuer die PI- und Sprint-Kopfzeilen.
+// fuer die Sprint-Kopfzeile (ein Sprint ist immer schon von Natur aus zusammenhaengend).
 function buildSegments(dayInfo, getLabel) {
   const segments = [];
   dayInfo.forEach(di => {
@@ -27,6 +28,35 @@ function buildSegments(dayInfo, getLabel) {
       segments.push({ label, colspan: 1 });
     }
   });
+  return segments;
+}
+
+// Fuer die PI-Kopfzeile: eine PI soll durchgehend und nur EINMAL erscheinen, auch wenn
+// zwischen zwei Sprints derselben PI eine Luecke liegt (z.B. Wochenende ohne Sprint).
+// Ermittelt dazu pro PI den ersten und letzten Tag ihres Vorkommens im Monat und
+// behandelt die gesamte Spanne dazwischen als eine zusammenhaengende Zelle.
+function buildContinuousSegments(dayInfo, getLabel) {
+  const ranges = new Map();
+  dayInfo.forEach((di, idx) => {
+    const label = getLabel(di);
+    if (!label) return;
+    if (!ranges.has(label)) ranges.set(label, { first: idx, last: idx });
+    else ranges.get(label).last = idx;
+  });
+
+  const sortedLabels = [...ranges.entries()].sort((a, b) => a[1].first - b[1].first);
+  const segments = [];
+  let cursor = 0;
+  sortedLabels.forEach(([label, range]) => {
+    if (range.first > cursor) {
+      segments.push({ label: '', colspan: range.first - cursor });
+    }
+    segments.push({ label, colspan: range.last - range.first + 1 });
+    cursor = range.last + 1;
+  });
+  if (cursor < dayInfo.length) {
+    segments.push({ label: '', colspan: dayInfo.length - cursor });
+  }
   return segments;
 }
 
@@ -54,6 +84,7 @@ export async function renderTeamCalendar(container) {
         <span><span class="swatch" style="background:#E6E0F8;"></span>${t('teamCal.legendHoliday')}</span>
         <span><span class="swatch" style="background:#FBE7EA;"></span>${t('teamCal.legendBlocked')}</span>
         <span><span class="swatch" style="background:${WEEKEND_BG}; border:1px solid var(--border);"></span>${t('teamCal.legendWeekend')}</span>
+        <span><span class="swatch" style="background:${PI_SPRINT_COLOR};"></span>${t('teamCal.legendPiSprint')}</span>
       </div>
     </div>
   `;
@@ -146,20 +177,20 @@ export async function renderTeamCalendar(container) {
     const lang = document.documentElement.lang === 'en' ? 'en' : 'de';
     const wd = weekdayLetters[lang];
 
-    // PI- und Sprint-Kopfzeilen: aufeinanderfolgende Tage mit gleicher PI/gleichem Sprint zusammenfassen
-    const piSegments = buildSegments(dayInfo, di => di.sprint ? (piMap.get(di.sprint.pi_id) || '') : '');
+    // PI- und Sprint-Kopfzeilen: PI durchgehend und nur einmal pro Vorkommen, Sprint pro tatsaechlichem Sprint
+    const piSegments = buildContinuousSegments(dayInfo, di => di.sprint ? (piMap.get(di.sprint.pi_id) || '') : '');
     const sprintSegments = buildSegments(dayInfo, di => di.sprint ? (di.sprint.name || ('Sprint ' + di.sprint.sprint_number)) : '');
 
     let headHtml = `<thead>
       <tr>
         <th class="cal-name-col" style="border-bottom:none;"></th>
         <th class="cal-team-col" style="border-bottom:none;"></th>
-        ${piSegments.map(seg => `<th colspan="${seg.colspan}" style="font-size:0.68rem; color:var(--text-muted); font-weight:600;">${escapeHtml(seg.label)}</th>`).join('')}
+        ${piSegments.map(seg => `<th colspan="${seg.colspan}" style="font-size:0.68rem; color:#0f4a44; font-weight:600; ${seg.label ? `background:${PI_SPRINT_COLOR};` : ''}">${escapeHtml(seg.label)}</th>`).join('')}
       </tr>
       <tr>
         <th class="cal-name-col" style="border-bottom:none; border-top:none;"></th>
         <th class="cal-team-col" style="border-bottom:none; border-top:none;"></th>
-        ${sprintSegments.map(seg => `<th colspan="${seg.colspan}" style="font-size:0.65rem; color:var(--text-muted); font-weight:500; border-top:none;">${escapeHtml(seg.label)}</th>`).join('')}
+        ${sprintSegments.map(seg => `<th colspan="${seg.colspan}" style="font-size:0.65rem; color:#0f4a44; font-weight:500; border-top:none; ${seg.label ? `background:${PI_SPRINT_COLOR};` : ''}">${escapeHtml(seg.label)}</th>`).join('')}
       </tr>
       <tr>
         <th class="cal-name-col">${t('employees.fullName')}</th>

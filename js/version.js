@@ -6,9 +6,27 @@
 //
 // Bei jeder Aenderung: APP_VERSION anpassen UND einen neuen Eintrag oben in CHANGELOG ergaenzen.
 
-export const APP_VERSION = '1.15.0';
+export const APP_VERSION = '1.16.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.16.0',
+    date: '2026-08-23',
+    changes: {
+      de: [
+        'Team-Kalender: PI-Kopfzeile ist jetzt durchgehend, PI-Name erscheint nur einmal pro Vorkommen (auch bei Lücken zwischen Sprints derselben PI); zwei PIs im selben Monat erscheinen beide, je nur einmal',
+        'Team-Kalender: PI- und Sprint-Zellen jetzt farbig markiert (Teal, bisher ungenutzte Farbe)',
+        'Mein Urlaub: vergangene "Final gebucht"-Einträge kann der Mitarbeiter nicht mehr selbst stornieren - nur noch Admin',
+        'Genehmigungen: Admin kann jetzt jeden Antrag jederzeit löschen oder stornieren (neue Admin-Aktionen in "Alle Anträge"), unabhängig von Status oder Datum',
+      ],
+      en: [
+        'Team calendar: the PI header row is now continuous, the PI name appears only once per occurrence (even across gaps between sprints of the same PI); two PIs in the same month both appear, each only once',
+        'Team calendar: PI and sprint cells are now color-coded (teal, a previously unused color)',
+        'My Leave: employees can no longer cancel past "final booked" entries themselves - admin only',
+        'Approvals: admin can now delete or cancel any request at any time (new admin actions in "All requests"), regardless of status or date',
+      ],
+    },
+  },
   {
     version: '1.15.0',
     date: '2026-08-23',

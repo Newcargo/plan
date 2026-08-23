@@ -156,11 +156,14 @@ const dict = {
     'approvals.rejectCommentRequired': 'Ein Kommentar ist bei Ablehnung erforderlich:',
     'approvals.waitingDays': 'wartet seit {days} Werktagen',
     'approvals.blockedWarning': 'Überschneidet Sperrzeit "{label}" ({start} – {end})',
+    'approvals.adminStornoConfirm': 'Diesen Antrag als Admin stornieren? Das überschreibt die normale Selbstbestätigung durch den Mitarbeiter.',
+    'approvals.adminDeleteConfirm': 'Diesen Antrag endgültig löschen? Das kann nicht rückgängig gemacht werden.',
     'teamCal.title': 'Team-Kalender',
     'teamCal.today': 'Heute',
     'teamCal.legendHoliday': 'Feiertag',
     'teamCal.legendBlocked': 'Sperrzeit',
     'teamCal.legendWeekend': 'Wochenende',
+    'teamCal.legendPiSprint': 'PI / Sprint',
   },
   en: {
     'app.title': 'Leave & Capacity – Admin',
@@ -315,11 +318,14 @@ const dict = {
     'approvals.rejectCommentRequired': 'A comment is required to reject:',
     'approvals.waitingDays': 'waiting {days} business days',
     'approvals.blockedWarning': 'Overlaps blocked period "{label}" ({start} – {end})',
+    'approvals.adminStornoConfirm': 'Cancel this request as admin? This overrides the employee\'s normal self-confirmation step.',
+    'approvals.adminDeleteConfirm': 'Permanently delete this request? This cannot be undone.',
     'teamCal.title': 'Team Calendar',
     'teamCal.today': 'Today',
     'teamCal.legendHoliday': 'Holiday',
     'teamCal.legendBlocked': 'Blocked period',
     'teamCal.legendWeekend': 'Weekend',
+    'teamCal.legendPiSprint': 'PI / Sprint',
   }
 };
 

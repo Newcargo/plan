@@ -1,6 +1,8 @@
 import { supabase } from '../supabaseClient.js';
 import { t } from '../i18n.js';
 import { formatDate, businessDaysSince } from '../dateFormat.js';
+import { showConfirmModal } from '../modal.js';
+import { ICON_DELETE, iconButton } from '../icons.js';
 
 const STATUS_META = {
   beantragt: { label: 'Beantragt', cls: 'badge-warn' },
@@ -14,6 +16,7 @@ export async function renderApprovals(container, context) {
   const roles = (context && context.roles) || new Set();
   const currentEmployeeId = context && context.employee && context.employee.id;
   const canApprove = roles.has('stufe2_genehmiger') || roles.has('admin');
+  const isAdmin = roles.has('admin');
 
   let reminderDays = 5;
   const { data: cfg } = await supabase.from('app_config').select('value').eq('key', 'reminder_business_days').maybeSingle();
@@ -45,8 +48,9 @@ export async function renderApprovals(container, context) {
           <th>${t('myLeave.statusCol')}</th>
           <th>${t('myLeave.comment')}</th>
           <th>${t('approvals.processedBy')}</th>
+          ${isAdmin ? '<th></th>' : ''}
         </tr></thead>
-        <tbody id="history-tbody"><tr><td colspan="5" class="empty-state">${t('common.loading')}</td></tr></tbody>
+        <tbody id="history-tbody"><tr><td colspan="${isAdmin ? 6 : 5}" class="empty-state">${t('common.loading')}</td></tr></tbody>
       </table>
     </div>
   `;
@@ -66,7 +70,7 @@ export async function renderApprovals(container, context) {
     if (error) {
       ['pending-tbody', 'history-tbody'].forEach(id => {
         const el = document.getElementById(id);
-        if (el) el.innerHTML = `<tr><td colspan="5" class="empty-state">${t('common.error')}</td></tr>`;
+        if (el) el.innerHTML = `<tr><td colspan="${isAdmin ? 6 : 5}" class="empty-state">${t('common.error')}</td></tr>`;
       });
       return;
     }
@@ -143,20 +147,57 @@ export async function renderApprovals(container, context) {
 
   function renderHistory(rows) {
     const tbody = document.getElementById('history-tbody');
-    if (!rows.length) { tbody.innerHTML = `<tr><td colspan="5" class="empty-state">${t('common.none')}</td></tr>`; return; }
+    if (!rows.length) { tbody.innerHTML = `<tr><td colspan="${isAdmin ? 6 : 5}" class="empty-state">${t('common.none')}</td></tr>`; return; }
 
     tbody.innerHTML = rows.map(r => {
       const meta = STATUS_META[r.status] || { label: r.status, cls: 'badge-muted' };
+      const canStorno = isAdmin && ['beantragt', 'genehmigt_projekt', 'final_gebucht'].includes(r.status);
       return `
-        <tr>
+        <tr data-id="${r.id}">
           <td>${escapeHtml(r.employees?.full_name || '–')}${r.employees?.is_external ? ` <span class="badge badge-muted">extern</span>` : ''}</td>
           <td class="mono">${formatDate(r.start_date)} – ${formatDate(r.end_date)}</td>
           <td><span class="badge ${meta.cls}">${t('myLeave.status.' + r.status) || meta.label}</span></td>
           <td>${escapeHtml(r.comment_stufe2 || '')}</td>
           <td>${escapeHtml(r.approver?.full_name || '–')}</td>
+          ${isAdmin ? `<td class="row-actions">
+            ${canStorno ? `<button type="button" class="btn btn-danger admin-storno-btn">${t('myLeave.storno')}</button>` : ''}
+            ${iconButton(ICON_DELETE, t('common.delete'), 'admin-delete-btn')}
+          </td>` : ''}
         </tr>
       `;
     }).join('');
+
+    tbody.querySelectorAll('.admin-storno-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const ok = await showConfirmModal({
+          title: t('myLeave.storno'),
+          message: t('approvals.adminStornoConfirm'),
+          confirmLabel: t('myLeave.storno'),
+          cancelLabel: t('common.cancel'),
+        });
+        if (!ok) return;
+        const id = btn.closest('tr').dataset.id;
+        const { error } = await supabase.from('leave_requests').update({ status: 'storniert' }).eq('id', id);
+        if (error) { alert(t('common.error') + '\n' + error.message); return; }
+        loadAll();
+      });
+    });
+
+    tbody.querySelectorAll('.admin-delete-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const ok = await showConfirmModal({
+          title: t('common.delete'),
+          message: t('approvals.adminDeleteConfirm'),
+          confirmLabel: t('common.delete'),
+          cancelLabel: t('common.cancel'),
+        });
+        if (!ok) return;
+        const id = btn.closest('tr').dataset.id;
+        const { error } = await supabase.from('leave_requests').delete().eq('id', id);
+        if (error) { alert(t('common.error') + '\n' + error.message); return; }
+        loadAll();
+      });
+    });
   }
 
   loadAll();
