@@ -2,7 +2,7 @@ import { supabase } from '../supabaseClient.js';
 import { t } from '../i18n.js';
 import { ICON_EDIT, ICON_DELETE, iconButton, fieldLabel } from '../icons.js';
 import { createSortState, sortableHeader, wireSortHeaders, sortArray } from '../sortable.js';
-import { formatDate } from '../dateFormat.js';
+import { formatDate, todayISO } from '../dateFormat.js';
 
 export async function renderSprints(container) {
   const sortState = createSortState('sprint_number', true);
@@ -43,11 +43,12 @@ export async function renderSprints(container) {
           ${fieldLabel(t('common.name'), 'Frei wählbarer Anzeigename des Sprints, unabhängig von der Sprint-Position. Kann jederzeit geändert werden, ohne Verknüpfungen zu brechen.')}
           <input type="text" id="f-sprint-name" placeholder="Sprint 1">
 
-          ${fieldLabel(t('sprints.start'), 'Sprint-Startdatum. Bestimmt zusammen mit dem Enddatum die verfügbaren Arbeitstage für die Kapazitätsberechnung.')}
-          <input type="date" id="f-sprint-start" required class="narrow">
-
-          <label>${t('sprints.end')}</label>
-          <input type="date" id="f-sprint-end" required class="narrow">
+          ${fieldLabel(t('sprints.start') + ' – ' + t('sprints.end'), 'Sprint-Zeitraum. Bestimmt die verfügbaren Arbeitstage für die Kapazitätsberechnung.')}
+          <div class="date-range-inline">
+            <input type="date" id="f-sprint-start" required value="${todayISO()}">
+            <span>–</span>
+            <input type="date" id="f-sprint-end" required value="${todayISO()}">
+          </div>
         </div>
         <div class="form-actions">
           <button type="button" class="btn btn-secondary" id="sprint-cancel-btn" hidden>${t('common.cancel')}</button>
@@ -65,6 +66,10 @@ export async function renderSprints(container) {
   const sprintForm = document.getElementById('sprint-form');
   const submitBtn = document.getElementById('sprint-submit-btn');
   const cancelBtn = document.getElementById('sprint-cancel-btn');
+
+  document.getElementById('f-sprint-start').addEventListener('change', e => {
+    document.getElementById('f-sprint-end').min = e.target.value;
+  });
 
   function wireHead() {
     const row = document.getElementById('sprint-thead-row');
@@ -114,6 +119,8 @@ export async function renderSprints(container) {
   function resetSprintForm() {
     sprintForm.reset();
     document.getElementById('f-sprint-id').value = '';
+    document.getElementById('f-sprint-start').value = todayISO();
+    document.getElementById('f-sprint-end').value = todayISO();
     submitBtn.textContent = t('sprints.addSprint');
     document.getElementById('sprint-form-title').textContent = t('sprints.addSprint');
     cancelBtn.hidden = true;

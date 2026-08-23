@@ -6,9 +6,51 @@
 //
 // Bei jeder Aenderung: APP_VERSION anpassen UND einen neuen Eintrag oben in CHANGELOG ergaenzen.
 
-export const APP_VERSION = '1.16.3';
+export const APP_VERSION = '1.17.2';
 
 export const CHANGELOG = [
+  {
+    version: '1.17.2',
+    date: '2026-08-23',
+    changes: {
+      de: [
+        'Hauptbereich passt sich jetzt dynamisch an die Browserbreite an, statt bei 1100px gedeckelt zu sein (nützt v. a. dem Team-Kalender bei vielen Tages-Spalten)',
+        'Formular-Felder bleiben dabei bewusst auf max. 700px begrenzt, damit Eingabefelder auf breiten Bildschirmen nicht unschön in die Breite gezogen werden',
+      ],
+      en: [
+        'Main content area now adapts dynamically to the browser width instead of being capped at 1100px (mainly benefits the team calendar with many day columns)',
+        'Form fields are deliberately still capped at max. 700px so input fields don\'t stretch awkwardly wide on large screens',
+      ],
+    },
+  },
+  {
+    version: '1.17.1',
+    date: '2026-08-23',
+    changes: {
+      de: [
+        'Alle Datumsfelder in Formularen (Mein Urlaub, Sperrzeiten, PI & Sprints, Feiertage) zeigen jetzt standardmässig das heutige Datum statt eines leeren Platzhalters',
+      ],
+      en: [
+        'All date fields in forms (My Leave, blocked periods, PI & sprints, holidays) now default to today\'s date instead of an empty placeholder',
+      ],
+    },
+  },
+  {
+    version: '1.17.0',
+    date: '2026-08-23',
+    changes: {
+      de: [
+        'Von-/Bis-Datumsfelder stehen jetzt überall nebeneinander statt untereinander (Mein Urlaub, Sperrzeiten, PI & Sprints) - spart Platz',
+        'Mein Urlaub: "Von"-Datum kann nicht mehr in der Vergangenheit gewählt werden - ausser für Admin (zur Korrektur)',
+        'Sperrzeiten und PI & Sprints: "Bis"-Feld sperrt jetzt ebenfalls alle Tage vor dem gewählten "Von"-Datum',
+      ],
+      en: [
+        'From/To date fields now sit side by side everywhere instead of stacked (My Leave, blocked periods, PI & sprints) - saves space',
+        'My Leave: the "From" date can no longer be in the past - except for admin (for corrections)',
+        'Blocked periods and PI & sprints: the "To" field now also blocks all days before the selected "From" date',
+      ],
+    },
+  },
   {
     version: '1.16.3',
     date: '2026-08-23',

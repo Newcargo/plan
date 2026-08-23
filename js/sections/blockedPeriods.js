@@ -14,11 +14,12 @@ export async function renderBlocked(container) {
       <div class="form-panel-title">${t('common.add')}</div>
       <form id="bp-form">
         <div class="form-grid">
-          <label>${t('blocked.start')}</label>
-          <input type="date" id="f-start" required class="narrow">
-
-          <label>${t('blocked.end')}</label>
-          <input type="date" id="f-end" required class="narrow">
+          ${fieldLabel(t('blocked.start') + ' – ' + t('blocked.end'), 'Zeitraum der Sperrzeit.')}
+          <div class="date-range-inline">
+            <input type="date" id="f-start" required value="${todayISO()}">
+            <span>–</span>
+            <input type="date" id="f-end" required value="${todayISO()}">
+          </div>
 
           ${fieldLabel(t('blocked.label'), 'Grund der Sperrzeit, z. B. "Betriebsferien" oder "Wartungsfenster".')}
           <input type="text" id="f-label" required>
@@ -52,6 +53,10 @@ export async function renderBlocked(container) {
   }
   wireHead();
 
+  document.getElementById('f-start').addEventListener('change', e => {
+    document.getElementById('f-end').min = e.target.value;
+  });
+
   document.getElementById('bp-form').addEventListener('submit', async e => {
     e.preventDefault();
     const payload = {
@@ -64,6 +69,8 @@ export async function renderBlocked(container) {
     if (error) { alert(t('common.error') + '\n' + error.message); return; }
     e.target.reset();
     document.getElementById('f-impact').checked = true;
+    document.getElementById('f-start').value = todayISO();
+    document.getElementById('f-end').value = todayISO();
     load();
   });
 

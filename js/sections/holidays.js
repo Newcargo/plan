@@ -17,7 +17,7 @@ export async function renderHolidays(container) {
         <input type="hidden" id="f-id">
         <div class="form-grid">
           ${fieldLabel(t('holidays.date'), 'Datum des Feiertags. Wird bei der Kapazitätsberechnung automatisch als Nicht-Arbeitstag berücksichtigt.')}
-          <input type="date" id="f-date" required class="narrow">
+          <input type="date" id="f-date" required class="narrow" value="${todayISO()}">
 
           <label>${t('holidays.name')}</label>
           <input type="text" id="f-name" required>
@@ -58,6 +58,7 @@ export async function renderHolidays(container) {
   function resetForm() {
     form.reset();
     document.getElementById('f-id').value = '';
+    document.getElementById('f-date').value = todayISO();
     submitBtn.textContent = t('common.add');
     document.getElementById('hol-form-title').textContent = t('common.add');
     cancelBtn.hidden = true;

@@ -43,11 +43,12 @@ export async function renderMyLeave(container, context) {
       <div class="form-panel-title">${t('myLeave.newRequestTitle')}</div>
       <form id="leave-form">
         <div class="form-grid">
-          ${fieldLabel(t('myLeave.start'), 'Erster Urlaubstag.')}
-          <input type="date" id="f-leave-start" required class="narrow">
-
-          ${fieldLabel(t('myLeave.end'), 'Letzter Urlaubstag (inklusive).')}
-          <input type="date" id="f-leave-end" required class="narrow">
+          ${fieldLabel(t('myLeave.start') + ' – ' + t('myLeave.end'), 'Erster und letzter Urlaubstag (inklusive). Das Enddatum kann nicht vor dem Startdatum liegen.')}
+          <div class="date-range-inline">
+            <input type="date" id="f-leave-start" required value="${todayISO()}">
+            <span>–</span>
+            <input type="date" id="f-leave-end" required value="${todayISO()}">
+          </div>
         </div>
         <div id="leave-warnings" style="margin-bottom:0.75rem;"></div>
         <div class="form-actions" style="justify-content:flex-start;">
@@ -75,6 +76,11 @@ export async function renderMyLeave(container, context) {
   const startInput = document.getElementById('f-leave-start');
   const endInput = document.getElementById('f-leave-end');
   const warningsBox = document.getElementById('leave-warnings');
+
+  const isAdmin = (context && context.roles && context.roles.has('admin')) || false;
+  if (!isAdmin) {
+    startInput.min = todayISO();
+  }
 
   async function checkOverlaps() {
     const start = startInput.value;
@@ -153,6 +159,9 @@ export async function renderMyLeave(container, context) {
     }
 
     e.target.reset();
+    startInput.value = todayISO();
+    endInput.value = todayISO();
+    if (!isAdmin) startInput.min = todayISO();
     warningsBox.innerHTML = '';
     load();
   });

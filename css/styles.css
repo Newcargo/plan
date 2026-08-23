@@ -154,7 +154,8 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
 .main {
   flex: 1;
   padding: 2rem 2.5rem;
-  max-width: 1100px;
+  width: 100%;
+  max-width: 100%;
 }
 .main header { margin-bottom: 1.75rem; }
 .main header p { color: var(--text-muted); margin: 0.25rem 0 0; font-size: 0.9rem; }
@@ -217,7 +218,7 @@ tr:last-child td { border-bottom: none; }
 
 /* Formular-Muster "Vorschlag C": Label links (feste Breite), Feld rechts, volle Zeilenbreite je Feld */
 .form-panel-title { font-family: var(--font-display); font-size: 1.15rem; font-weight: 700; color: var(--text); margin: 0 0 1.5rem; }
-.form-grid { display: grid; grid-template-columns: 190px 1fr; align-items: center; gap: 0.9rem 1rem; margin-bottom: 1.25rem; }
+.form-grid { display: grid; grid-template-columns: 190px 1fr; align-items: center; gap: 0.9rem 1rem; margin-bottom: 1.25rem; max-width: 700px; }
 .form-grid label { font-size: 0.85rem; color: var(--text); }
 .form-grid input, .form-grid select { padding: 0.5rem 0.65rem; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 0.9rem; box-sizing: border-box; width: 100%; font-family: var(--font-body); background: var(--surface); color: var(--text); }
 .form-grid input[type="checkbox"] { width: auto; justify-self: start; }
@@ -226,6 +227,11 @@ tr:last-child td { border-bottom: none; }
 .form-grid .divider { grid-column: 1 / -1; border-top: 1px solid var(--border); margin: 0.4rem 0; }
 .form-grid .hint-row { grid-column: 1 / -1; font-size: 0.78rem; color: var(--text-muted); margin-top: -0.5rem; }
 .form-actions { display: flex; gap: 0.6rem; justify-content: flex-end; margin-top: 0.25rem; }
+
+/* Von/Bis-Datumsfelder nebeneinander statt untereinander */
+.date-range-inline { display: flex; align-items: center; gap: 0.5rem; }
+.date-range-inline input[type="date"] { width: auto; flex: 1; min-width: 0; }
+.date-range-inline span { color: var(--text-muted); flex-shrink: 0; }
 
 .empty-state { color: var(--text-muted); font-size: 0.9rem; padding: 1rem 0; }
 
