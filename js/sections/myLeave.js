@@ -53,7 +53,7 @@ export async function renderMyLeave(container, context) {
             <input type="date" id="f-leave-end" required value="${todayISO()}">
           </div>
 
-          <label id="portion-label" for="f-portion" class="field-label">${t('myLeave.dayPortion')}${infoIcon('Nur bei eintägigen Anträgen wählbar (Von = Bis).')}</label>
+          <label id="portion-label" for="f-portion" class="field-label">${t('myLeave.dayPortion')}${infoIcon('Gilt für jeden Tag im gewählten Zeitraum, z. B. eine ganze Woche lang nur vormittags.')}</label>
           <select id="f-portion" style="max-width:220px;">
             <option value="ganztag">${t('myLeave.dayPortion.ganztag')}</option>
             <option value="vormittag">${t('myLeave.dayPortion.vormittag')}</option>
@@ -91,14 +91,11 @@ export async function renderMyLeave(container, context) {
   const startInput = document.getElementById('f-leave-start');
   const endInput = document.getElementById('f-leave-end');
   const warningsBox = document.getElementById('leave-warnings');
-  const portionLabel = document.getElementById('portion-label');
   const portionSelect = document.getElementById('f-portion');
 
   function updatePortionVisibility() {
-    const isSingleDay = startInput.value && startInput.value === endInput.value;
-    portionLabel.hidden = !isSingleDay;
-    portionSelect.hidden = !isSingleDay;
-    if (!isSingleDay) portionSelect.value = 'ganztag';
+    // Halbtag gilt jetzt einheitlich fuer den ganzen gewaehlten Zeitraum (nicht mehr nur eintaegig) -
+    // Feld bleibt daher immer waehlbar, unabhaengig von Von/Bis.
   }
 
   const isAdmin = (context && context.roles && context.roles.has('admin')) || false;

@@ -6,9 +6,39 @@
 //
 // Bei jeder Aenderung: APP_VERSION anpassen UND einen neuen Eintrag oben in CHANGELOG ergaenzen.
 
-export const APP_VERSION = '1.20.4';
+export const APP_VERSION = '1.21.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.21.0',
+    date: '2026-08-23',
+    changes: {
+      de: [
+        'Halbtags-Urlaub gilt jetzt auch für mehrtägige Zeiträume, nicht mehr nur für einzelne Tage - z. B. eine ganze Woche lang jeden Tag nur vormittags',
+        'Team-Kalender zeigt das automatisch korrekt an (jeder Tag im Zeitraum als Halbtag-Zelle), ohne dass dafür etwas geändert werden musste',
+        '"Ganzer Tag / Vormittag / Nachmittag" ist jetzt immer wählbar, unabhängig von der Zeitraum-Länge',
+      ],
+      en: [
+        'Half-day leave now also applies to multi-day periods, not just single days - e.g. mornings only for an entire week',
+        'The team calendar automatically displays this correctly (every day in the range as a half-day cell), no changes needed there',
+        '"Full day / Morning / Afternoon" is now always selectable, regardless of the period length',
+      ],
+    },
+  },
+  {
+    version: '1.20.5',
+    date: '2026-08-23',
+    changes: {
+      de: [
+        'Klarstellung: Das Verschwinden des Halbtag-Felds bei mehrtägigen Anträgen war eigentlich beabsichtigtes Verhalten (Halbtage sind nur für eintägige Anträge gedacht), wirkte aber verwirrend',
+        'UX-Verbesserung: Feld bleibt jetzt immer sichtbar, wird bei mehrtägigen Anträgen stattdessen ausgegraut und auf "Ganzer Tag" gesperrt, statt komplett zu verschwinden',
+      ],
+      en: [
+        'Clarification: the half-day field disappearing for multi-day requests was actually intended behavior (half-days are only meant for single-day requests), but it felt confusing',
+        'UX improvement: the field now always stays visible, but is greyed out and locked to "full day" for multi-day requests instead of disappearing entirely',
+      ],
+    },
+  },
   {
     version: '1.20.4',
     date: '2026-08-23',
