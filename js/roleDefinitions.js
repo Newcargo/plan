@@ -9,7 +9,7 @@ export const ROLE_DEFINITIONS = {
     includes: [],
   },
   stufe2_genehmiger: {
-    label: 'Stufe-2-Genehmiger',
+    label: 'Projekt Approver',
     description: 'Kann Urlaubsanträge aller Mitarbeiter einsehen sowie genehmigen oder ablehnen (Stufe 2 des Workflows), inkl. Kommentar an den Antragsteller.',
     includes: [],
   },

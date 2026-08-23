@@ -43,7 +43,7 @@ export async function renderRoles(container) {
 
     <div class="card">
       <div class="form-panel-title">Was dürfen die Rollen?</div>
-      <p class="empty-state" style="padding-top:0;">Hinweis: Die Stammdaten-Rechte (Teams, Mitarbeiter, Feiertage usw.) für Admin sind bereits aktiv. Die feineren Unterschiede zwischen Stufe-2-Genehmiger und People Pool Manager greifen vollständig, sobald der Urlaubskalender selbst gebaut ist.</p>
+      <p class="empty-state" style="padding-top:0;">Hinweis: Die Stammdaten-Rechte (Teams, Mitarbeiter, Feiertage usw.) für Admin sind bereits aktiv. Die feineren Unterschiede zwischen Projekt Approver und People Pool Manager greifen vollständig, sobald der Urlaubskalender selbst gebaut ist.</p>
       <div style="display:flex; flex-direction:column; gap:0.9rem;">
         ${ALL_ROLES.map(r => {
           const def = ROLE_DEFINITIONS[r];
@@ -88,11 +88,11 @@ export async function renderRoles(container) {
   function wireHead() {
     const header = document.getElementById('role-list-header');
     header.innerHTML = `
-      <span style="width:12px;"></span>
+      <span></span>
       ${sortableHeader(t('employees.fullName'), 'full_name', sortState, 'span')}
-      <span style="flex:0 0 220px;">${t('roles.email') || 'E-Mail'}</span>
-      <span style="flex:0 0 110px;">${t('employees.hasLogin')}</span>
-      <span style="flex:1;">${ALL_ROLES.map(r => t('roles.' + r)).join(' / ')}</span>
+      <span>${t('roles.email') || 'E-Mail'}</span>
+      <span>${t('employees.hasLogin')}</span>
+      <span>${ALL_ROLES.map(r => t('roles.' + r)).join(' / ')}</span>
     `;
     wireSortHeaders(header, sortState, () => { renderRows(); });
   }
@@ -174,9 +174,9 @@ export async function renderRoles(container) {
           <span class="role-chevron">${isExpanded ? '▾' : '▸'}</span>
           <span class="role-name">${escapeHtml(emp.full_name)}</span>
           <span class="role-email">${emp.email ? escapeHtml(emp.email) : '–'}</span>
-          <span>${emp.auth_user_id
+          <span class="role-status-col">${emp.auth_user_id
             ? `<span class="badge badge-success">${t('employees.hasLogin')}</span>`
-            : `<span class="badge badge-muted">${t('employees.noLogin')}</span>`}${emp.is_blocked ? ` <span class="badge badge-danger">${t('roles.blocked')}</span>` : ''}</span>
+            : `<span class="badge badge-muted">${t('employees.noLogin')}</span>`}${emp.is_blocked ? `<span class="badge badge-danger">${t('roles.blocked')}</span>` : ''}</span>
           <span class="role-summary">${escapeHtml(summary)}</span>
         </div>
       `;

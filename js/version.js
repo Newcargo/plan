@@ -6,9 +6,53 @@
 //
 // Bei jeder Aenderung: APP_VERSION anpassen UND einen neuen Eintrag oben in CHANGELOG ergaenzen.
 
-export const APP_VERSION = '1.17.2';
+export const APP_VERSION = '1.18.2';
 
 export const CHANGELOG = [
+  {
+    version: '1.18.2',
+    date: '2026-08-23',
+    changes: {
+      de: [
+        'Fehlerbehebung: Spaltenköpfe bei Rollen & Zugriff waren nicht mehr korrekt über den Daten ausgerichtet, sobald eine Zeile zwei Badges zeigte (z. B. "App-Zugang" + "Gesperrt") - Layout von flexibler auf feste Spaltenbreiten (Grid) umgestellt',
+      ],
+      en: [
+        'Bug fix: column headers under Roles & Access no longer lined up correctly once a row showed two badges (e.g. "App access" + "Blocked") - switched the layout from flexible to fixed-width columns (grid)',
+      ],
+    },
+  },
+  {
+    version: '1.18.1',
+    date: '2026-08-23',
+    changes: {
+      de: [
+        'Rolle "Stufe-2-Genehmiger" / "Level-2 approver" umbenannt in "Projekt Approver" (überall in der App, in beiden Sprachen)',
+      ],
+      en: [
+        'Renamed the "Stufe-2-Genehmiger" / "Level-2 approver" role to "Projekt Approver" (throughout the app, in both languages)',
+      ],
+    },
+  },
+  {
+    version: '1.18.0',
+    date: '2026-08-23',
+    changes: {
+      de: [
+        'App umbenannt von "Urlaub & Kapazität – Admin" zu "Urlaub & Kapazität"',
+        'Name und Rollen des angemeldeten Users stehen jetzt oben in der Seitenleiste, direkt unter dem App-Namen',
+        '"Abmelden" steht jetzt unterhalb von "Change-Log" in der normalen Navigation',
+        'Sprachumschaltung in die obere rechte Ecke verschoben, DE/EN-Text durch Flaggen ersetzt (🇩🇪/🇬🇧)',
+        'Sperrzeiten können jetzt auch nachträglich bearbeitet werden (bisher nur Löschen möglich)',
+      ],
+      en: [
+        'App renamed from "Leave & Capacity – Admin" to "Leave & Capacity"',
+        'Signed-in user\'s name and roles now sit at the top of the sidebar, right under the app name',
+        '"Sign out" now sits below "Change log" in the regular navigation',
+        'Language switch moved to the top-right corner, DE/EN text replaced with flags (🇩🇪/🇬🇧)',
+        'Blocked periods can now be edited afterward (previously only deletion was possible)',
+      ],
+    },
+  },
   {
     version: '1.17.2',
     date: '2026-08-23',

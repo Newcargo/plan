@@ -1,6 +1,6 @@
 import { supabase } from '../supabaseClient.js';
 import { t } from '../i18n.js';
-import { ICON_DELETE, iconButton, fieldLabel } from '../icons.js';
+import { ICON_EDIT, ICON_DELETE, iconButton, fieldLabel } from '../icons.js';
 import { createSortState, sortableHeader, wireSortHeaders, sortArray } from '../sortable.js';
 import { formatDate, todayISO } from '../dateFormat.js';
 
@@ -11,8 +11,9 @@ export async function renderBlocked(container) {
   container.innerHTML = `
     <header><h1>${t('nav.blocked')}</h1></header>
     <div class="card">
-      <div class="form-panel-title">${t('common.add')}</div>
+      <div class="form-panel-title" id="bp-form-title">${t('common.add')}</div>
       <form id="bp-form">
+        <input type="hidden" id="f-id">
         <div class="form-grid">
           ${fieldLabel(t('blocked.start') + ' – ' + t('blocked.end'), 'Zeitraum der Sperrzeit.')}
           <div class="date-range-inline">
@@ -28,7 +29,8 @@ export async function renderBlocked(container) {
           <input type="checkbox" id="f-impact" checked>
         </div>
         <div class="form-actions">
-          <button type="submit" class="btn btn-primary">${t('common.add')}</button>
+          <button type="button" class="btn btn-secondary" id="bp-cancel-btn" hidden>${t('common.cancel')}</button>
+          <button type="submit" class="btn btn-primary" id="bp-submit-btn">${t('common.add')}</button>
         </div>
       </form>
     </div>
@@ -40,6 +42,10 @@ export async function renderBlocked(container) {
       </table>
     </div>
   `;
+
+  const form = document.getElementById('bp-form');
+  const submitBtn = document.getElementById('bp-submit-btn');
+  const cancelBtn = document.getElementById('bp-cancel-btn');
 
   function wireHead() {
     const row = document.getElementById('bp-thead-row');
@@ -57,20 +63,36 @@ export async function renderBlocked(container) {
     document.getElementById('f-end').min = e.target.value;
   });
 
-  document.getElementById('bp-form').addEventListener('submit', async e => {
+  function resetForm() {
+    form.reset();
+    document.getElementById('f-id').value = '';
+    document.getElementById('f-impact').checked = true;
+    document.getElementById('f-start').value = todayISO();
+    document.getElementById('f-end').value = todayISO();
+    submitBtn.textContent = t('common.add');
+    document.getElementById('bp-form-title').textContent = t('common.add');
+    cancelBtn.hidden = true;
+  }
+
+  cancelBtn.addEventListener('click', resetForm);
+
+  form.addEventListener('submit', async e => {
     e.preventDefault();
+    const id = document.getElementById('f-id').value;
     const payload = {
       start_date: document.getElementById('f-start').value,
       end_date: document.getElementById('f-end').value,
       label: document.getElementById('f-label').value.trim(),
       capacity_impact: document.getElementById('f-impact').checked,
     };
-    const { error } = await supabase.from('blocked_periods').insert(payload);
+
+    const query = id
+      ? supabase.from('blocked_periods').update(payload).eq('id', id)
+      : supabase.from('blocked_periods').insert(payload);
+
+    const { error } = await query;
     if (error) { alert(t('common.error') + '\n' + error.message); return; }
-    e.target.reset();
-    document.getElementById('f-impact').checked = true;
-    document.getElementById('f-start').value = todayISO();
-    document.getElementById('f-end').value = todayISO();
+    resetForm();
     load();
   });
 
@@ -99,10 +121,30 @@ export async function renderBlocked(container) {
           <td>${bp.capacity_impact
             ? `<span class="badge badge-danger">ja</span>`
             : `<span class="badge badge-muted">nein</span>`}</td>
-          <td class="row-actions">${iconButton(ICON_DELETE, t('common.delete'), 'delete-btn')}</td>
+          <td class="row-actions">
+            ${iconButton(ICON_EDIT, t('common.edit'), 'edit-btn')}
+            ${iconButton(ICON_DELETE, t('common.delete'), 'delete-btn')}
+          </td>
         </tr>
       `;
     }).join('');
+
+    tbody.querySelectorAll('.edit-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.closest('tr').dataset.id;
+        const bp = bpData.find(x => x.id === id);
+        document.getElementById('f-id').value = bp.id;
+        document.getElementById('f-start').value = bp.start_date;
+        document.getElementById('f-end').value = bp.end_date;
+        document.getElementById('f-end').min = bp.start_date;
+        document.getElementById('f-label').value = bp.label;
+        document.getElementById('f-impact').checked = bp.capacity_impact;
+        submitBtn.textContent = t('common.save');
+        document.getElementById('bp-form-title').textContent = t('common.edit');
+        cancelBtn.hidden = false;
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+    });
 
     tbody.querySelectorAll('.delete-btn').forEach(btn => {
       btn.addEventListener('click', async () => {

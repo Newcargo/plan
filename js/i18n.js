@@ -4,7 +4,7 @@
 
 const dict = {
   de: {
-    'app.title': 'Urlaub & Kapazität – Admin',
+    'app.title': 'Urlaub & Kapazität',
     'nav.myLeave': 'Mein Urlaub',
     'nav.teamCalendar': 'Team-Kalender',
     'nav.approvals': 'Genehmigungen',
@@ -91,7 +91,7 @@ const dict = {
     'roles.title': 'Rollen & Zugriff',
     'roles.subtitle': 'Eine Person kann mehrere Rollen gleichzeitig haben.',
     'roles.mitarbeiter': 'Mitarbeiter',
-    'roles.stufe2_genehmiger': 'Stufe-2-Genehmiger',
+    'roles.stufe2_genehmiger': 'Projekt Approver',
     'roles.people_pool_manager': 'People Pool Manager',
     'roles.admin': 'Admin',
     'roles.addLoginTitle': 'Login für Kollegen einrichten',
@@ -167,7 +167,7 @@ const dict = {
     'teamCal.legendPiSprint': 'PI / Sprint',
   },
   en: {
-    'app.title': 'Leave & Capacity – Admin',
+    'app.title': 'Leave & Capacity',
     'nav.myLeave': 'My Leave',
     'nav.teamCalendar': 'Team Calendar',
     'nav.approvals': 'Approvals',
@@ -254,7 +254,7 @@ const dict = {
     'roles.title': 'Roles & access',
     'roles.subtitle': 'A person can hold several roles at the same time.',
     'roles.mitarbeiter': 'Employee',
-    'roles.stufe2_genehmiger': 'Level-2 approver',
+    'roles.stufe2_genehmiger': 'Projekt Approver',
     'roles.people_pool_manager': 'People pool manager',
     'roles.admin': 'Admin',
     'roles.addLoginTitle': 'Set up login for a colleague',
