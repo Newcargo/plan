@@ -14,6 +14,7 @@ import { renderRoles } from './sections/roles.js';
 import { renderChangelog } from './sections/changelog.js';
 import { renderMyLeave } from './sections/myLeave.js';
 import { renderApprovals } from './sections/approvals.js';
+import { renderTeamCalendar } from './sections/teamCalendar.js';
 import { APP_VERSION } from './version.js';
 import { ROLE_DEFINITIONS, ALL_ROLE_KEYS } from './roleDefinitions.js';
 
@@ -30,6 +31,7 @@ const routes = {
   changelog: renderChangelog,
   'my-leave': renderMyLeave,
   approvals: renderApprovals,
+  'team-calendar': renderTeamCalendar,
 };
 
 const loginScreen = document.getElementById('login-screen');

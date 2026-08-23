@@ -101,7 +101,10 @@ export async function renderMyLeave(container, context) {
     warningsBox.innerHTML = html;
   }
 
-  startInput.addEventListener('change', checkOverlaps);
+  startInput.addEventListener('change', () => {
+    endInput.min = startInput.value;
+    checkOverlaps();
+  });
   endInput.addEventListener('change', checkOverlaps);
 
   document.getElementById('leave-form').addEventListener('submit', async e => {

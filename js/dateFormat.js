@@ -43,3 +43,14 @@ export function businessDaysSince(fromDateString) {
   }
   return count;
 }
+
+const MONTHS = {
+  de: ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'],
+  en: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
+};
+
+export function formatMonthYear(date, lang) {
+  const l = lang || getLang();
+  const months = MONTHS[l] || MONTHS.de;
+  return `${months[date.getMonth()]} ${date.getFullYear()}`;
+}

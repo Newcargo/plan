@@ -6,9 +6,25 @@
 //
 // Bei jeder Aenderung: APP_VERSION anpassen UND einen neuen Eintrag oben in CHANGELOG ergaenzen.
 
-export const APP_VERSION = '1.13.0';
+export const APP_VERSION = '1.14.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.14.0',
+    date: '2026-08-23',
+    changes: {
+      de: [
+        'Neuer Bereich "Team-Kalender" für alle Kollegen: Monatsübersicht, wer wann Urlaub hat (nach Team gruppiert), inkl. Feiertage und Sperrzeiten farbig markiert. Reine Ansicht, keine Einträge möglich',
+        'Mein Urlaub: "Bis"-Datum sperrt jetzt automatisch alle Tage vor dem gewählten "Von"-Datum',
+        'Genehmigungen: Sperrzeiten-Überschneidung wird jetzt auch dem Genehmiger direkt bei offenen Anträgen angezeigt',
+      ],
+      en: [
+        'New "Team Calendar" area for everyone: monthly overview of who is on leave when (grouped by team), holidays and blocked periods color-coded. View-only, no entries possible',
+        'My Leave: the "To" date now automatically blocks all days before the selected "From" date',
+        'Approvals: blocked-period overlaps are now also shown directly to the approver on pending requests',
+      ],
+    },
+  },
   {
     version: '1.13.0',
     date: '2026-08-23',

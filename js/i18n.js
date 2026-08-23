@@ -6,6 +6,7 @@ const dict = {
   de: {
     'app.title': 'Urlaub & Kapazität – Admin',
     'nav.myLeave': 'Mein Urlaub',
+    'nav.teamCalendar': 'Team-Kalender',
     'nav.approvals': 'Genehmigungen',
     'nav.dashboard': 'Übersicht',
     'nav.teams': 'Teams',
@@ -153,10 +154,17 @@ const dict = {
     'approvals.confirmFinalManual': 'Final bestätigen',
     'approvals.confirmFinalManualConfirm': 'Diesen Antrag final bestätigen (z. B. weil der Mitarbeiter nicht selbst online gehen kann)?',
     'approvals.waitingDays': 'wartet seit {days} Werktagen',
+    'approvals.blockedWarning': 'Überschneidet Sperrzeit "{label}" ({start} – {end})',
+    'teamCal.title': 'Team-Kalender',
+    'teamCal.today': 'Heute',
+    'teamCal.legendHoliday': 'Feiertag',
+    'teamCal.legendBlocked': 'Sperrzeit',
+    'teamCal.legendWeekend': 'Wochenende',
   },
   en: {
     'app.title': 'Leave & Capacity – Admin',
     'nav.myLeave': 'My Leave',
+    'nav.teamCalendar': 'Team Calendar',
     'nav.approvals': 'Approvals',
     'nav.dashboard': 'Overview',
     'nav.teams': 'Teams',
@@ -304,6 +312,12 @@ const dict = {
     'approvals.confirmFinalManual': 'Confirm final',
     'approvals.confirmFinalManualConfirm': 'Confirm this request as final booked (e.g. because the employee cannot go online themselves)?',
     'approvals.waitingDays': 'waiting {days} business days',
+    'approvals.blockedWarning': 'Overlaps blocked period "{label}" ({start} – {end})',
+    'teamCal.title': 'Team Calendar',
+    'teamCal.today': 'Today',
+    'teamCal.legendHoliday': 'Holiday',
+    'teamCal.legendBlocked': 'Blocked period',
+    'teamCal.legendWeekend': 'Weekend',
   }
 };
 

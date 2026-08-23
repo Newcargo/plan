@@ -73,23 +73,33 @@ export async function renderApprovals(container, context) {
     }
 
     const all = data || [];
-    if (canApprove) renderPending(all.filter(r => r.status === 'beantragt'));
+    if (canApprove) {
+      const { data: blockedPeriods } = await supabase.from('blocked_periods').select('start_date, end_date, label');
+      renderPending(all.filter(r => r.status === 'beantragt'), blockedPeriods || []);
+    }
     renderHistory(all);
   }
 
-  function renderPending(rows) {
+  function renderPending(rows, blockedPeriods) {
     const tbody = document.getElementById('pending-tbody');
     if (!rows.length) { tbody.innerHTML = `<tr><td colspan="3" class="empty-state">${t('common.none')}</td></tr>`; return; }
 
     tbody.innerHTML = rows.map(r => {
       const waitingDays = businessDaysSince(r.created_at);
       const isAged = waitingDays >= reminderDays;
+      const overlaps = blockedPeriods.filter(bp => bp.start_date <= r.end_date && bp.end_date >= r.start_date);
+      const warningHtml = overlaps.length
+        ? overlaps.map(bp => `<div style="font-size:0.78rem; color:var(--danger); margin-top:0.2rem;">⚠ ${t('approvals.blockedWarning')
+            .replace('{label}', escapeHtml(bp.label))
+            .replace('{start}', formatDate(bp.start_date))
+            .replace('{end}', formatDate(bp.end_date))}</div>`).join('')
+        : '';
       return `
         <tr data-id="${r.id}" class="${isAged ? 'row-past' : ''}">
           <td>${escapeHtml(r.employees?.full_name || '–')}
             ${isAged ? `<span class="badge badge-danger">${t('approvals.waitingDays').replace('{days}', waitingDays)}</span>` : ''}
           </td>
-          <td class="mono">${formatDate(r.start_date)} – ${formatDate(r.end_date)}</td>
+          <td class="mono">${formatDate(r.start_date)} – ${formatDate(r.end_date)}${warningHtml}</td>
           <td class="row-actions">
             <button type="button" class="btn btn-secondary approve-btn">${t('approvals.approve')}</button>
             <button type="button" class="btn btn-danger reject-btn">${t('approvals.reject')}</button>
