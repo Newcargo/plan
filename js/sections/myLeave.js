@@ -135,6 +135,9 @@ export async function renderMyLeave(container, context) {
 
   startInput.addEventListener('change', () => {
     endInput.min = startInput.value;
+    if (!endInput.value || endInput.value < startInput.value) {
+      endInput.value = startInput.value;
+    }
     updatePortionVisibility();
     checkOverlaps();
   });

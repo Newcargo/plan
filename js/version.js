@@ -6,9 +6,21 @@
 //
 // Bei jeder Aenderung: APP_VERSION anpassen UND einen neuen Eintrag oben in CHANGELOG ergaenzen.
 
-export const APP_VERSION = '1.20.1';
+export const APP_VERSION = '1.20.2';
 
 export const CHANGELOG = [
+  {
+    version: '1.20.2',
+    date: '2026-08-23',
+    changes: {
+      de: [
+        'Fehlerbehebung: Halbtag-Auswahl verschwand sofort beim Setzen des "Von"-Datums, weil "Bis" nicht automatisch mitzog - "Bis" springt jetzt automatisch auf "Von", solange es nicht bewusst später gesetzt wurde',
+      ],
+      en: [
+        'Bug fix: the half-day selector disappeared immediately when setting the "From" date because "To" did not follow along - "To" now automatically jumps to "From" unless deliberately set later',
+      ],
+    },
+  },
   {
     version: '1.20.1',
     date: '2026-08-23',
