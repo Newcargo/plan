@@ -70,7 +70,7 @@ export async function renderSprints(container) {
     });
   });
 
-  document.getElementById('pi-rename-btn').addEventListener('click', async () => {
+  document.querySelector('.pi-rename-btn').addEventListener('click', async () => {
     if (!piSelect.value) return;
     const current = piSelect.options[piSelect.selectedIndex].textContent;
     const newName = prompt(t('sprints.piName'), current);
@@ -80,7 +80,7 @@ export async function renderSprints(container) {
     await loadPis(newName.trim());
   });
 
-  document.getElementById('pi-delete-btn').addEventListener('click', async () => {
+  document.querySelector('.pi-delete-btn').addEventListener('click', async () => {
     if (!piSelect.value) return;
     if (!confirm(t('common.confirmDelete'))) return;
     const { error } = await supabase.from('program_increments').delete().eq('id', piSelect.value);

@@ -6,9 +6,23 @@
 //
 // Bei jeder Aenderung: APP_VERSION anpassen UND einen neuen Eintrag oben in CHANGELOG ergaenzen.
 
-export const APP_VERSION = '1.20.0';
+export const APP_VERSION = '1.20.1';
 
 export const CHANGELOG = [
+  {
+    version: '1.20.1',
+    date: '2026-08-23',
+    changes: {
+      de: [
+        'Fehlerbehebung: PI & Sprints wurden nach dem Pop-up-Umbau nicht mehr angezeigt - beim Umbau versehentlich wieder derselbe Fehler wie zuvor eingebaut (getElementById statt Klassen-Selektor für die PI-Umbenennen/-Löschen-Icons)',
+        'Alle Dateien systematisch auf denselben Fehlertyp durchsucht, keine weiteren Treffer',
+      ],
+      en: [
+        'Bug fix: PI & Sprints stopped showing after the pop-up rewrite - the same bug as before was accidentally reintroduced (getElementById instead of a class selector for the PI rename/delete icons)',
+        'Systematically searched all files for the same bug pattern, no further occurrences found',
+      ],
+    },
+  },
   {
     version: '1.20.0',
     date: '2026-08-23',
