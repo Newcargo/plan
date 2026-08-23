@@ -6,9 +6,21 @@
 //
 // Bei jeder Aenderung: APP_VERSION anpassen UND einen neuen Eintrag oben in CHANGELOG ergaenzen.
 
-export const APP_VERSION = '1.20.3';
+export const APP_VERSION = '1.20.4';
 
 export const CHANGELOG = [
+  {
+    version: '1.20.4',
+    date: '2026-08-23',
+    changes: {
+      de: [
+        'Fehlerbehebung: eigentliche Ursache für das verschwindende Halbtag-Feld gefunden - "display:contents" (browserabhängig, v. a. Safari hat bekannte Darstellungsprobleme damit bei <select>-Feldern) durch dieselbe robuste hidden-Technik ersetzt, die schon im Rest der App bewährt ist',
+      ],
+      en: [
+        'Bug fix: found the actual root cause of the disappearing half-day field - replaced "display:contents" (browser-dependent, Safari in particular has known rendering issues with it on <select> fields) with the same robust hidden-attribute technique already proven elsewhere in the app',
+      ],
+    },
+  },
   {
     version: '1.20.3',
     date: '2026-08-23',

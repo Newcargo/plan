@@ -1,6 +1,6 @@
 import { supabase } from '../supabaseClient.js';
 import { t } from '../i18n.js';
-import { ICON_DELETE, iconButton, fieldLabel } from '../icons.js';
+import { ICON_DELETE, iconButton, fieldLabel, infoIcon } from '../icons.js';
 import { formatDate, todayISO } from '../dateFormat.js';
 import { showConfirmModal } from '../modal.js';
 
@@ -53,14 +53,12 @@ export async function renderMyLeave(container, context) {
             <input type="date" id="f-leave-end" required value="${todayISO()}">
           </div>
 
-          <div id="portion-row" style="display:contents;">
-            ${fieldLabel(t('myLeave.dayPortion'), 'Nur bei eintägigen Anträgen wählbar (Von = Bis).')}
-            <select id="f-portion" style="max-width:220px;">
-              <option value="ganztag">${t('myLeave.dayPortion.ganztag')}</option>
-              <option value="vormittag">${t('myLeave.dayPortion.vormittag')}</option>
-              <option value="nachmittag">${t('myLeave.dayPortion.nachmittag')}</option>
-            </select>
-          </div>
+          <label id="portion-label" for="f-portion" class="field-label">${t('myLeave.dayPortion')}${infoIcon('Nur bei eintägigen Anträgen wählbar (Von = Bis).')}</label>
+          <select id="f-portion" style="max-width:220px;">
+            <option value="ganztag">${t('myLeave.dayPortion.ganztag')}</option>
+            <option value="vormittag">${t('myLeave.dayPortion.vormittag')}</option>
+            <option value="nachmittag">${t('myLeave.dayPortion.nachmittag')}</option>
+          </select>
         </div>
         <div id="leave-warnings" style="margin-bottom:0.75rem;"></div>
         <div class="form-actions" style="justify-content:flex-start;">
@@ -93,12 +91,13 @@ export async function renderMyLeave(container, context) {
   const startInput = document.getElementById('f-leave-start');
   const endInput = document.getElementById('f-leave-end');
   const warningsBox = document.getElementById('leave-warnings');
-  const portionRow = document.getElementById('portion-row');
+  const portionLabel = document.getElementById('portion-label');
   const portionSelect = document.getElementById('f-portion');
 
   function updatePortionVisibility() {
     const isSingleDay = startInput.value && startInput.value === endInput.value;
-    portionRow.style.display = isSingleDay ? 'contents' : 'none';
+    portionLabel.hidden = !isSingleDay;
+    portionSelect.hidden = !isSingleDay;
     if (!isSingleDay) portionSelect.value = 'ganztag';
   }
 
