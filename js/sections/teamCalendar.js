@@ -1,6 +1,6 @@
 import { supabase } from '../supabaseClient.js';
 import { t } from '../i18n.js';
-import { formatMonthYear } from '../dateFormat.js';
+import { formatMonthYear, localISO, todayISO } from '../dateFormat.js';
 
 const STATUS_COLORS = {
   beantragt: { bg: '#E0A400', text: '#000', code: 'BE' },
@@ -11,9 +11,6 @@ const STATUS_COLORS = {
 const WEEKEND_BG = '#EDEFF2';
 const PI_SPRINT_COLOR = '#B8E8E0';
 
-function toISO(date) {
-  return date.toISOString().slice(0, 10);
-}
 
 // Gruppiert aufeinanderfolgende Tage mit demselben Label zu einer Zelle (colspan),
 // fuer die Sprint-Kopfzeile (ein Sprint ist immer schon von Natur aus zusammenhaengend).
@@ -99,6 +96,11 @@ export async function renderTeamCalendar(container) {
     }[s]));
   }
 
+  function holidayText(holiday) {
+    if (!holiday) return '';
+    return holiday.note ? `${holiday.name} - ${holiday.note}` : holiday.name;
+  }
+
   async function load() {
     document.getElementById('cal-month-label').textContent = formatMonthYear(cursor);
     const table = document.getElementById('cal-table');
@@ -106,16 +108,16 @@ export async function renderTeamCalendar(container) {
 
     const monthStart = new Date(cursor.getFullYear(), cursor.getMonth(), 1);
     const monthEnd = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 0);
-    const monthStartISO = toISO(monthStart);
-    const monthEndISO = toISO(monthEnd);
+    const monthStartISO = localISO(monthStart);
+    const monthEndISO = localISO(monthEnd);
     const daysInMonth = monthEnd.getDate();
-    const todayISO = toISO(new Date());
+    const currentTodayISO = todayISO();
 
     const [teamsRes, employeesRes, leaveRes, holidaysRes, blockedRes, sprintsRes, pisRes] = await Promise.all([
       supabase.from('teams').select('id, name').order('name'),
       supabase.from('employees').select('id, full_name, team_id').eq('active', true),
       supabase.from('v_leave_calendar').select('employee_id, start_date, end_date, status').lte('start_date', monthEndISO).gte('end_date', monthStartISO),
-      supabase.from('holidays').select('date, name').gte('date', monthStartISO).lte('date', monthEndISO),
+      supabase.from('holidays').select('date, name, note').gte('date', monthStartISO).lte('date', monthEndISO),
       supabase.from('blocked_periods').select('start_date, end_date, label').lte('start_date', monthEndISO).gte('end_date', monthStartISO),
       supabase.from('sprints').select('id, pi_id, sprint_number, name, start_date, end_date').lte('start_date', monthEndISO).gte('end_date', monthStartISO),
       supabase.from('program_increments').select('id, name'),
@@ -136,7 +138,7 @@ export async function renderTeamCalendar(container) {
     const dayInfo = [];
     for (let d = 1; d <= daysInMonth; d++) {
       const dt = new Date(cursor.getFullYear(), cursor.getMonth(), d);
-      const iso = toISO(dt);
+      const iso = localISO(dt);
       const holiday = holidays.find(h => h.date === iso);
       const blockedHit = blocked.find(bp => bp.start_date <= iso && bp.end_date >= iso);
       const sprintHit = sprints.find(s => s.start_date <= iso && s.end_date >= iso);
@@ -145,7 +147,7 @@ export async function renderTeamCalendar(container) {
         dayNum: d,
         weekday: dt.getDay(),
         isWeekend: dt.getDay() === 0 || dt.getDay() === 6,
-        holiday: holiday ? holiday.name : null,
+        holiday: holiday ? { name: holiday.name, note: holiday.note } : null,
         blocked: blockedHit ? blockedHit.label : null,
         sprint: sprintHit || null,
       });
@@ -195,7 +197,7 @@ export async function renderTeamCalendar(container) {
       <tr>
         <th class="cal-name-col">${t('employees.fullName')}</th>
         <th class="cal-team-col">${t('employees.team')}</th>
-        ${dayInfo.map(di => `<th class="cal-day-col${di.isWeekend ? ' weekend' : ''}${di.date === todayISO ? ' today' : ''}" title="${di.holiday ? escapeHtml(di.holiday) : ''}${di.blocked ? ' ' + escapeHtml(di.blocked) : ''}">${di.dayNum}<br>${wd[di.weekday]}</th>`).join('')}
+        ${dayInfo.map(di => `<th class="cal-day-col${di.isWeekend ? ' weekend' : ''}${di.date === currentTodayISO ? ' today' : ''}" title="${di.holiday ? escapeHtml(holidayText(di.holiday)) : ''}${di.blocked ? ' ' + escapeHtml(di.blocked) : ''}">${di.dayNum}<br>${wd[di.weekday]}</th>`).join('')}
       </tr>
     </thead>`;
 
@@ -223,7 +225,7 @@ export async function renderTeamCalendar(container) {
               title = di.blocked;
             } else if (di.holiday) {
               bg = '#E6E0F8';
-              title = di.holiday;
+              title = holidayText(di.holiday);
             } else if (di.isWeekend) {
               bg = WEEKEND_BG;
             }

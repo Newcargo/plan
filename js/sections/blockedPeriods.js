@@ -2,7 +2,7 @@ import { supabase } from '../supabaseClient.js';
 import { t } from '../i18n.js';
 import { ICON_DELETE, iconButton, fieldLabel } from '../icons.js';
 import { createSortState, sortableHeader, wireSortHeaders, sortArray } from '../sortable.js';
-import { formatDate } from '../dateFormat.js';
+import { formatDate, todayISO } from '../dateFormat.js';
 
 export async function renderBlocked(container) {
   const sortState = createSortState('start_date', false);
@@ -80,7 +80,7 @@ export async function renderBlocked(container) {
     if (!bpData.length) { tbody.innerHTML = `<tr><td colspan="5" class="empty-state">${t('common.none')}</td></tr>`; return; }
 
     sortArray(bpData, sortState);
-    const today = new Date().toISOString().slice(0, 10);
+    const today = todayISO();
 
     tbody.innerHTML = bpData.map(bp => {
       const isPast = bp.end_date < today;

@@ -6,9 +6,39 @@
 //
 // Bei jeder Aenderung: APP_VERSION anpassen UND einen neuen Eintrag oben in CHANGELOG ergaenzen.
 
-export const APP_VERSION = '1.16.1';
+export const APP_VERSION = '1.16.3';
 
 export const CHANGELOG = [
+  {
+    version: '1.16.3',
+    date: '2026-08-23',
+    changes: {
+      de: [
+        'Feiertage: Bearbeiten-Funktion ergänzt (bisher war nur Löschen möglich)',
+        'Team-Kalender: Feiertags-Tooltip zeigt jetzt auch die Bemerkung, im Format "Bezeichnung - Bemerkung"',
+      ],
+      en: [
+        'Holidays: added edit capability (previously only deletion was possible)',
+        'Team calendar: holiday tooltip now also shows the note, formatted as "Name - Note"',
+      ],
+    },
+  },
+  {
+    version: '1.16.2',
+    date: '2026-08-23',
+    changes: {
+      de: [
+        'Fehlerbehebung: Team-Kalender zeigte Sperrzeiten (und andere Datumsvergleiche) um einen Tag verschoben - Zeitzonen-Bug (Schweiz UTC+1/+2) in der Datumsberechnung behoben',
+        'Betroffen und korrigiert: Team-Kalender, Feiertage, Sperrzeiten, Mein Urlaub (alle "heute/vergangen"-Vergleiche)',
+        'Neue zentrale, zeitzonensichere Hilfsfunktion (localISO/todayISO) statt der fehleranfälligen toISOString()-Methode',
+      ],
+      en: [
+        'Bug fix: team calendar showed blocked periods (and other date comparisons) shifted by one day - fixed a timezone bug (Switzerland UTC+1/+2) in date calculation',
+        'Affected and fixed: team calendar, holidays, blocked periods, my leave (all "today/past" comparisons)',
+        'New central, timezone-safe helper (localISO/todayISO) replacing the error-prone toISOString() approach',
+      ],
+    },
+  },
   {
     version: '1.16.1',
     date: '2026-08-23',

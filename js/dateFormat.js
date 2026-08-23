@@ -1,5 +1,19 @@
 import { getLang } from './i18n.js';
 
+// Zeitzonensichere ISO-Datumsformatierung (YYYY-MM-DD) aus lokalen Datumsanteilen.
+// WICHTIG: date.toISOString().slice(0,10) ist FALSCH fuer diesen Zweck - das konvertiert
+// erst nach UTC, was in der Schweiz (UTC+1/+2) das Datum um einen Tag verschieben kann.
+export function localISO(date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+export function todayISO() {
+  return localISO(new Date());
+}
+
 // Wochentag-Kuerzel (2 Buchstaben) pro Sprache, Index = JS getDay() (0 = Sonntag)
 const WEEKDAYS = {
   de: ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'],

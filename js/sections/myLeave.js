@@ -1,7 +1,7 @@
 import { supabase } from '../supabaseClient.js';
 import { t } from '../i18n.js';
 import { ICON_DELETE, iconButton, fieldLabel } from '../icons.js';
-import { formatDate } from '../dateFormat.js';
+import { formatDate, todayISO } from '../dateFormat.js';
 import { showConfirmModal } from '../modal.js';
 
 const STATUS_META = {
@@ -174,7 +174,7 @@ export async function renderMyLeave(container, context) {
     const tbody = document.getElementById('leave-tbody');
     if (!leaveData.length) { tbody.innerHTML = `<tr><td colspan="5" class="empty-state">${t('common.none')}</td></tr>`; return; }
 
-    const todayISO = new Date().toISOString().slice(0, 10);
+    const currentTodayISO = todayISO();
 
     tbody.innerHTML = leaveData.map(lr => {
       const meta = STATUS_META[lr.status] || { label: lr.status, cls: 'badge-muted' };
@@ -191,7 +191,7 @@ export async function renderMyLeave(container, context) {
         actions += `<button type="button" class="btn btn-danger storno-btn">${t('myLeave.storno')}</button>`;
       }
       if (lr.status === 'final_gebucht') {
-        const isPast = lr.end_date < todayISO;
+        const isPast = lr.end_date < currentTodayISO;
         if (!isPast) {
           actions += `<button type="button" class="btn btn-danger storno-btn">${t('myLeave.storno')}</button>`;
         }
@@ -201,7 +201,7 @@ export async function renderMyLeave(container, context) {
         actions += iconButton(ICON_DELETE, t('common.delete'), 'delete-storniert-btn');
       }
 
-      const isPastFinal = lr.status === 'final_gebucht' && lr.end_date < todayISO;
+      const isPastFinal = lr.status === 'final_gebucht' && lr.end_date < currentTodayISO;
 
       return `
         <tr data-id="${lr.id}" data-start="${lr.start_date}" data-end="${lr.end_date}" class="${isPastFinal ? 'row-past' : ''}">
