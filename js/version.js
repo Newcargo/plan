@@ -6,9 +6,27 @@
 //
 // Bei jeder Aenderung: APP_VERSION anpassen UND einen neuen Eintrag oben in CHANGELOG ergaenzen.
 
-export const APP_VERSION = '1.18.2';
+export const APP_VERSION = '1.19.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.19.0',
+    date: '2026-08-23',
+    changes: {
+      de: [
+        'Halbtags-Urlaub: bei eintägigen Anträgen (Von = Bis) kann zwischen Ganzer Tag / Vormittag / Nachmittag gewählt werden',
+        'Halbtag-Anträge durchlaufen exakt denselben Genehmigungsprozess wie Ganztags-Anträge',
+        'Team-Kalender: Halbtag-Einträge werden als zweigeteilte Zelle dargestellt (obere Hälfte = Vormittag, untere Hälfte = Nachmittag), inkl. Status-Kürzel und Tooltip',
+        '"Mein Urlaub" und "Genehmigungen" zeigen den gewählten Tagesabschnitt bei eintägigen Anträgen zusätzlich an',
+      ],
+      en: [
+        'Half-day leave: single-day requests (From = To) can now be set to full day / morning / afternoon',
+        'Half-day requests go through the exact same approval process as full-day requests',
+        'Team calendar: half-day entries render as a split cell (top half = morning, bottom half = afternoon), including status code and tooltip',
+        '"My Leave" and "Approvals" now also show the selected day portion for single-day requests',
+      ],
+    },
+  },
   {
     version: '1.18.2',
     date: '2026-08-23',

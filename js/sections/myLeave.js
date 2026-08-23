@@ -49,6 +49,15 @@ export async function renderMyLeave(container, context) {
             <span>–</span>
             <input type="date" id="f-leave-end" required value="${todayISO()}">
           </div>
+
+          <div id="portion-row" style="display:contents;">
+            ${fieldLabel(t('myLeave.dayPortion'), 'Nur bei eintägigen Anträgen wählbar (Von = Bis).')}
+            <select id="f-portion" style="max-width:220px;">
+              <option value="ganztag">${t('myLeave.dayPortion.ganztag')}</option>
+              <option value="vormittag">${t('myLeave.dayPortion.vormittag')}</option>
+              <option value="nachmittag">${t('myLeave.dayPortion.nachmittag')}</option>
+            </select>
+          </div>
         </div>
         <div id="leave-warnings" style="margin-bottom:0.75rem;"></div>
         <div class="form-actions" style="justify-content:flex-start;">
@@ -76,6 +85,14 @@ export async function renderMyLeave(container, context) {
   const startInput = document.getElementById('f-leave-start');
   const endInput = document.getElementById('f-leave-end');
   const warningsBox = document.getElementById('leave-warnings');
+  const portionRow = document.getElementById('portion-row');
+  const portionSelect = document.getElementById('f-portion');
+
+  function updatePortionVisibility() {
+    const isSingleDay = startInput.value && startInput.value === endInput.value;
+    portionRow.style.display = isSingleDay ? 'contents' : 'none';
+    if (!isSingleDay) portionSelect.value = 'ganztag';
+  }
 
   const isAdmin = (context && context.roles && context.roles.has('admin')) || false;
   if (!isAdmin) {
@@ -110,9 +127,14 @@ export async function renderMyLeave(container, context) {
 
   startInput.addEventListener('change', () => {
     endInput.min = startInput.value;
+    updatePortionVisibility();
     checkOverlaps();
   });
-  endInput.addEventListener('change', checkOverlaps);
+  endInput.addEventListener('change', () => {
+    updatePortionVisibility();
+    checkOverlaps();
+  });
+  updatePortionVisibility();
 
   document.getElementById('leave-form').addEventListener('submit', async e => {
     e.preventDefault();
@@ -149,6 +171,7 @@ export async function renderMyLeave(container, context) {
       employee_id: employee.id,
       start_date: start,
       end_date: end,
+      day_portion: portionSelect.value,
       is_external_process: isExternal,
     });
 
@@ -162,6 +185,7 @@ export async function renderMyLeave(container, context) {
     startInput.value = todayISO();
     endInput.value = todayISO();
     if (!isAdmin) startInput.min = todayISO();
+    updatePortionVisibility();
     warningsBox.innerHTML = '';
     load();
   });
@@ -170,7 +194,7 @@ export async function renderMyLeave(container, context) {
     const tbody = document.getElementById('leave-tbody');
     const { data, error } = await supabase
       .from('leave_requests')
-      .select('id, start_date, end_date, status, comment_stufe2, approver:employees!leave_requests_approved_by_fkey(full_name)')
+      .select('id, start_date, end_date, status, day_portion, comment_stufe2, approver:employees!leave_requests_approved_by_fkey(full_name)')
       .eq('employee_id', employee.id)
       .order('start_date', { ascending: false });
 
@@ -212,9 +236,11 @@ export async function renderMyLeave(container, context) {
 
       const isPastFinal = lr.status === 'final_gebucht' && lr.end_date < currentTodayISO;
 
+      const portionSuffix = lr.day_portion !== 'ganztag' ? ` (${t('myLeave.dayPortion.' + lr.day_portion)})` : '';
+
       return `
         <tr data-id="${lr.id}" data-start="${lr.start_date}" data-end="${lr.end_date}" class="${isPastFinal ? 'row-past' : ''}">
-          <td class="mono">${formatDate(lr.start_date)} – ${formatDate(lr.end_date)}</td>
+          <td class="mono">${formatDate(lr.start_date)} – ${formatDate(lr.end_date)}${portionSuffix}</td>
           <td><span class="badge ${meta.cls}">${t('myLeave.status.' + lr.status) || meta.label}</span></td>
           <td>${escapeHtml(lr.comment_stufe2 || '')}</td>
           <td>${escapeHtml(lr.approver?.full_name || '–')}</td>

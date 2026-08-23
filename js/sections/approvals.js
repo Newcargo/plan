@@ -64,7 +64,7 @@ export async function renderApprovals(container, context) {
   async function loadAll() {
     const { data, error } = await supabase
       .from('leave_requests')
-      .select('id, start_date, end_date, status, comment_stufe2, created_at, employee_id, employees!leave_requests_employee_id_fkey(full_name, is_external), approver:employees!leave_requests_approved_by_fkey(full_name)')
+      .select('id, start_date, end_date, status, day_portion, comment_stufe2, created_at, employee_id, employees!leave_requests_employee_id_fkey(full_name, is_external), approver:employees!leave_requests_approved_by_fkey(full_name)')
       .order('start_date', { ascending: false });
 
     if (error) {
@@ -102,7 +102,7 @@ export async function renderApprovals(container, context) {
           <td>${escapeHtml(r.employees?.full_name || '–')}
             ${isAged ? `<span class="badge badge-danger">${t('approvals.waitingDays').replace('{days}', waitingDays)}</span>` : ''}
           </td>
-          <td class="mono">${formatDate(r.start_date)} – ${formatDate(r.end_date)}${warningHtml}</td>
+          <td class="mono">${formatDate(r.start_date)} – ${formatDate(r.end_date)}${r.day_portion !== 'ganztag' ? ` (${t('myLeave.dayPortion.' + r.day_portion)})` : ''}${warningHtml}</td>
           <td class="row-actions">
             <button type="button" class="btn btn-secondary approve-btn">${t('approvals.approve')}</button>
             <button type="button" class="btn btn-danger reject-btn">${t('approvals.reject')}</button>
@@ -155,7 +155,7 @@ export async function renderApprovals(container, context) {
       return `
         <tr data-id="${r.id}">
           <td>${escapeHtml(r.employees?.full_name || '–')}${r.employees?.is_external ? ` <span class="badge badge-muted">extern</span>` : ''}</td>
-          <td class="mono">${formatDate(r.start_date)} – ${formatDate(r.end_date)}</td>
+          <td class="mono">${formatDate(r.start_date)} – ${formatDate(r.end_date)}${r.day_portion !== 'ganztag' ? ` (${t('myLeave.dayPortion.' + r.day_portion)})` : ''}</td>
           <td><span class="badge ${meta.cls}">${t('myLeave.status.' + r.status) || meta.label}</span></td>
           <td>${escapeHtml(r.comment_stufe2 || '')}</td>
           <td>${escapeHtml(r.approver?.full_name || '–')}</td>

@@ -116,7 +116,7 @@ export async function renderTeamCalendar(container) {
     const [teamsRes, employeesRes, leaveRes, holidaysRes, blockedRes, sprintsRes, pisRes] = await Promise.all([
       supabase.from('teams').select('id, name').order('name'),
       supabase.from('employees').select('id, full_name, team_id').eq('active', true),
-      supabase.from('v_leave_calendar').select('employee_id, start_date, end_date, status').lte('start_date', monthEndISO).gte('end_date', monthStartISO),
+      supabase.from('v_leave_calendar').select('employee_id, start_date, end_date, status, day_portion').lte('start_date', monthEndISO).gte('end_date', monthStartISO),
       supabase.from('holidays').select('date, name, note').gte('date', monthStartISO).lte('date', monthEndISO),
       supabase.from('blocked_periods').select('start_date, end_date, label').lte('start_date', monthEndISO).gte('end_date', monthStartISO),
       supabase.from('sprints').select('id, pi_id, sprint_number, name, start_date, end_date').lte('start_date', monthEndISO).gte('end_date', monthStartISO),
@@ -160,11 +160,10 @@ export async function renderTeamCalendar(container) {
       leaveByEmployee.get(lr.employee_id).push(lr);
     });
 
-    function statusOnDay(employeeId, iso) {
+    function leaveOnDay(employeeId, iso) {
       const list = leaveByEmployee.get(employeeId);
       if (!list) return null;
-      const hit = list.find(lr => lr.start_date <= iso && lr.end_date >= iso);
-      return hit ? hit.status : null;
+      return list.find(lr => lr.start_date <= iso && lr.end_date >= iso) || null;
     }
 
     // Nach Team gruppieren und sortieren
@@ -210,7 +209,32 @@ export async function renderTeamCalendar(container) {
           <td class="cal-name-col">${escapeHtml(emp.full_name)}</td>
           <td class="cal-team-col">${escapeHtml(teamMap.get(emp.team_id) || '–')}</td>
           ${dayInfo.map(di => {
-            const status = statusOnDay(emp.id, di.date);
+            const leave = leaveOnDay(emp.id, di.date);
+            const status = leave ? leave.status : null;
+            const portion = leave ? leave.day_portion : 'ganztag';
+
+            // Basis-Hintergrund fuer den nicht durch Urlaub belegten Teil einer Zelle
+            // (Sperrzeit/Feiertag/Wochenende), gilt fuer Ganztag genauso wie fuer die freie Haelfte
+            let contextBg = '';
+            let contextTitle = '';
+            if (di.blocked) { contextBg = '#FBE7EA'; contextTitle = di.blocked; }
+            else if (di.holiday) { contextBg = '#E6E0F8'; contextTitle = holidayText(di.holiday); }
+            else if (di.isWeekend) { contextBg = WEEKEND_BG; }
+
+            if (status && STATUS_COLORS[status] && portion !== 'ganztag') {
+              const meta = STATUS_COLORS[status];
+              const statusTitle = `${t('myLeave.status.' + status)} (${t('myLeave.dayPortion.' + portion)})`;
+              const topIsStatus = portion === 'vormittag';
+              const topStyle = topIsStatus ? `background:${meta.bg};color:${meta.text};` : (contextBg ? `background:${contextBg};` : '');
+              const bottomStyle = !topIsStatus ? `background:${meta.bg};color:${meta.text};` : (contextBg ? `background:${contextBg};` : '');
+              const topCode = topIsStatus ? meta.code : '';
+              const bottomCode = !topIsStatus ? meta.code : '';
+              return `<td class="cal-cell cal-cell-split" title="${escapeHtml(statusTitle)}">
+                <div class="cal-cell-half" style="${topStyle}">${topCode}</div>
+                <div class="cal-cell-half" style="${bottomStyle}">${bottomCode}</div>
+              </td>`;
+            }
+
             let bg = '';
             let textColor = '';
             let code = '';
@@ -220,14 +244,9 @@ export async function renderTeamCalendar(container) {
               textColor = STATUS_COLORS[status].text;
               code = STATUS_COLORS[status].code;
               title = t('myLeave.status.' + status);
-            } else if (di.blocked) {
-              bg = '#FBE7EA';
-              title = di.blocked;
-            } else if (di.holiday) {
-              bg = '#E6E0F8';
-              title = holidayText(di.holiday);
-            } else if (di.isWeekend) {
-              bg = WEEKEND_BG;
+            } else {
+              bg = contextBg;
+              title = contextTitle;
             }
             const style = `${bg ? `background:${bg};` : ''}${textColor ? `color:${textColor};` : ''}`;
             return `<td class="cal-cell" style="${style}" title="${escapeHtml(title)}">${code}</td>`;
