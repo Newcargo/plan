@@ -40,10 +40,6 @@ async function sendDecisionMail(r, approverName, decision) {
   const isExternal = !!r.employees?.is_external;
 
   if (decision === 'approved') {
-    // WICHTIG: alle asynchronen Abfragen (z.B. PPM-E-Mails) muessen VOR dem ersten
-    // mailto-Aufruf abgeschlossen sein. Jede Wartezeit (auch ein einzelnes await)
-    // zwischen zwei mailto-Aufrufen kann den zweiten fuer den Browser wie eine nicht
-    // vom Nutzer ausgeloeste Aktion aussehen lassen - das wird dann lautlos blockiert.
     const ppmEmails = isExternal ? await getPpmEmails() : [];
 
     const subject = t('approvals.mailApprovedSubject');
@@ -55,19 +51,11 @@ async function sendDecisionMail(r, approverName, decision) {
       .replaceAll('{portion}', portionText(r))
       .replaceAll('{comment}', commentLine(r))
       .replaceAll('{link}', APP_URL);
-    const sentToEmployee = openMailto({ to: [employeeEmail], subject, body });
 
-    if (isExternal && ppmEmails.length) {
-      const ppmSubject = t('approvals.mailPpmForwardSubject');
-      const ppmBody = t('approvals.mailPpmForwardBody')
-        .replaceAll('{name}', employeeName)
-        .replaceAll('{approver}', approverName)
-        .replaceAll('{period}', periodText(r))
-        .replaceAll('{portion}', portionText(r))
-        .replaceAll('{link}', APP_URL);
-      openMailto({ to: ppmEmails, subject: ppmSubject, body: ppmBody });
-    }
-    return sentToEmployee;
+    // WICHTIG: EINE Mail mit PPM als CC statt zwei getrennter mailto-Aufrufe -
+    // Browser lassen pro Klick meist nur eine mailto-Ausloesung zu, eine zweite
+    // unabhaengige wird sonst lautlos verworfen (auch ohne jede Wartezeit dazwischen).
+    return openMailto({ to: [employeeEmail], cc: ppmEmails, subject, body });
   }
 
   // decision === 'rejected'

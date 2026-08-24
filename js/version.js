@@ -6,9 +6,21 @@
 //
 // Bei jeder Aenderung: APP_VERSION anpassen UND einen neuen Eintrag oben in CHANGELOG ergaenzen.
 
-export const APP_VERSION = '1.27.4';
+export const APP_VERSION = '1.28.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.28.0',
+    date: '2026-08-23',
+    changes: {
+      de: [
+        'Fehlerbehebung (wichtig): PPM-Weiterleitungs-Mail bei genehmigten externen Anträgen öffnete sich weiterhin nicht - Browser lassen offenbar pro Klick nur eine mailto-Auslösung zu, unabhängig vom Timing. Statt zwei getrennter Mails wird jetzt eine einzige Mail an den Mitarbeiter (An) mit dem PPM in CC verschickt, mit beiden Hinweisen im selben Text (entspricht dem ursprünglichen Whiteboard-Design)',
+      ],
+      en: [
+        'Bug fix (important): the PPM forwarding email for approved external requests still did not open - browsers apparently only allow one mailto trigger per click, regardless of timing. Instead of two separate emails, a single email now goes to the employee (To) with the PPM in Cc, with both notes in the same text (matches the original whiteboard design)',
+      ],
+    },
+  },
   {
     version: '1.27.4',
     date: '2026-08-23',
