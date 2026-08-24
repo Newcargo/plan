@@ -6,9 +6,25 @@
 //
 // Bei jeder Aenderung: APP_VERSION anpassen UND einen neuen Eintrag oben in CHANGELOG ergaenzen.
 
-export const APP_VERSION = '1.21.0';
+export const APP_VERSION = '1.21.1';
 
 export const CHANGELOG = [
+  {
+    version: '1.21.1',
+    date: '2026-08-23',
+    changes: {
+      de: [
+        'Fehlende Lücke geschlossen: E-Mail-Feld im Mitarbeiter-Formular ergänzt (bisher liess sich eine E-Mail nur zusammen mit einem Passwort über "Login erstellen" setzen)',
+        'Solange noch kein App-Zugang besteht, ist die E-Mail dort frei erfassbar/änderbar; sobald ein Login existiert, ist sie schreibgeschützt (Änderung dann nur über "Rollen & Zugriff", damit Login und Stammdaten synchron bleiben)',
+        'Neue E-Mail-Spalte in der Mitarbeiter-Tabelle',
+      ],
+      en: [
+        'Closed a real gap: added an email field to the employee form (previously an email could only be set together with a password via "Create login")',
+        'As long as no app access exists yet, the email can be freely entered/changed there; once a login exists, it becomes read-only (changes then go through "Roles & Access" to keep login and records in sync)',
+        'New email column in the employees table',
+      ],
+    },
+  },
   {
     version: '1.21.0',
     date: '2026-08-23',

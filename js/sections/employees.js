@@ -16,7 +16,7 @@ export async function renderEmployees(container) {
       </div>
       <table>
         <thead><tr id="emp-thead-row"></tr></thead>
-        <tbody id="emp-tbody"><tr><td colspan="8" class="empty-state">${t('common.loading')}</td></tr></tbody>
+        <tbody id="emp-tbody"><tr><td colspan="9" class="empty-state">${t('common.loading')}</td></tr></tbody>
       </table>
     </div>
   `;
@@ -38,6 +38,7 @@ export async function renderEmployees(container) {
     const row = document.getElementById('emp-thead-row');
     row.innerHTML = `
       ${sortableHeader(t('employees.fullName'), 'full_name', sortState)}
+      <th>${t('roles.email')}</th>
       ${sortableHeader(t('employees.team'), 'team_name', sortState)}
       <th>${t('employees.jobDescription')}</th>
       <th class="num">${t('employees.employmentPct')}</th>
@@ -55,6 +56,11 @@ export async function renderEmployees(container) {
       <div class="form-grid">
         <label>${t('employees.fullName')}</label>
         <input type="text" id="mf-name" required value="${emp ? escapeHtml(emp.full_name) : ''}">
+
+        ${fieldLabel(t('roles.email'), emp && emp.auth_user_id
+          ? 'Hat bereits einen App-Zugang – E-Mail nur über "Rollen & Zugriff" änderbar, damit Login und Stammdaten synchron bleiben.'
+          : 'E-Mail-Adresse des Mitarbeiters. Solange noch kein App-Zugang besteht, kann sie hier frei erfasst/geändert werden.')}
+        <input type="email" id="mf-email" value="${emp && emp.email ? escapeHtml(emp.email) : ''}" ${emp && emp.auth_user_id ? 'readonly' : ''}>
 
         ${fieldLabel(t('employees.team'), 'Team-Zuordnung bestimmt den Standard-Fokusfaktor und Team-Puffer für die Kapazitätsberechnung dieser Person.')}
         <select id="mf-team">${teams.map(tm => `<option value="${tm.id}" ${emp && emp.team_id === tm.id ? 'selected' : ''}>${escapeHtml(tm.name)}</option>`).join('')}</select>
@@ -87,14 +93,14 @@ export async function renderEmployees(container) {
     `;
   }
 
-  function readForm(modal) {
+  function readForm(modal, emp) {
     const indivFactor = modal.body.querySelector('#mf-indiv-factor').value;
     const indivNote = modal.body.querySelector('#mf-indiv-note').value.trim();
     if (indivFactor && !indivNote) {
       alert(t('employees.individualNote'));
       return null;
     }
-    return {
+    const payload = {
       full_name: modal.body.querySelector('#mf-name').value.trim(),
       team_id: modal.body.querySelector('#mf-team').value || null,
       job_description_id: modal.body.querySelector('#mf-jobdesc').value || null,
@@ -105,12 +111,18 @@ export async function renderEmployees(container) {
       is_external: modal.body.querySelector('#mf-external').checked,
       active: modal.body.querySelector('#mf-active').checked,
     };
+    // E-Mail nur setzen, solange noch kein App-Zugang besteht (sonst laeuft das ueber
+    // "Rollen & Zugriff", damit Login und Stammdaten synchron bleiben)
+    if (!emp || !emp.auth_user_id) {
+      payload.email = modal.body.querySelector('#mf-email').value.trim() || null;
+    }
+    return payload;
   }
 
   function openAdd() {
     const modal = openFormModal({ title: t('common.add'), bodyHtml: formBody(null), submitLabel: t('common.add'), cancelLabel: t('common.cancel') });
     modal.submitBtn.addEventListener('click', async () => {
-      const payload = readForm(modal);
+      const payload = readForm(modal, null);
       if (!payload) return;
       const { error } = await supabase.from('employees').insert(payload);
       if (error) { alert(t('common.error') + '\n' + error.message); return; }
@@ -122,7 +134,7 @@ export async function renderEmployees(container) {
   function openEdit(emp) {
     const modal = openFormModal({ title: t('common.edit'), bodyHtml: formBody(emp), submitLabel: t('common.save'), cancelLabel: t('common.cancel') });
     modal.submitBtn.addEventListener('click', async () => {
-      const payload = readForm(modal);
+      const payload = readForm(modal, emp);
       if (!payload) return;
       const { error } = await supabase.from('employees').update(payload).eq('id', emp.id);
       if (error) { alert(t('common.error') + '\n' + error.message); return; }
@@ -137,9 +149,9 @@ export async function renderEmployees(container) {
     const tbody = document.getElementById('emp-tbody');
     const { data: emps, error } = await supabase
       .from('employees')
-      .select('id, full_name, team_id, job_description_id, employment_pct, focus_factor_override, individual_factor, individual_factor_note, is_external, active, auth_user_id');
+      .select('id, full_name, email, team_id, job_description_id, employment_pct, focus_factor_override, individual_factor, individual_factor_note, is_external, active, auth_user_id');
 
-    if (error) { tbody.innerHTML = `<tr><td colspan="8" class="empty-state">${t('common.error')}</td></tr>`; return; }
+    if (error) { tbody.innerHTML = `<tr><td colspan="9" class="empty-state">${t('common.error')}</td></tr>`; return; }
 
     const { data: reductions } = await supabase.from('v_employee_reduction').select('employee_id, effective_reduction_pct');
     reductionMap = new Map((reductions || []).map(r => [r.employee_id, r.effective_reduction_pct]));
@@ -150,7 +162,7 @@ export async function renderEmployees(container) {
 
   function renderRows() {
     const tbody = document.getElementById('emp-tbody');
-    if (!empsData.length) { tbody.innerHTML = `<tr><td colspan="8" class="empty-state">${t('common.none')}</td></tr>`; return; }
+    if (!empsData.length) { tbody.innerHTML = `<tr><td colspan="9" class="empty-state">${t('common.none')}</td></tr>`; return; }
 
     sortArray(empsData, sortState);
 
@@ -160,6 +172,7 @@ export async function renderEmployees(container) {
       return `
         <tr data-id="${emp.id}" class="${!emp.active ? 'row-past' : ''}">
           <td>${escapeHtml(emp.full_name)}${emp.is_external ? ` <span class="badge badge-muted">extern</span>` : ''}</td>
+          <td>${emp.email ? escapeHtml(emp.email) : '–'}</td>
           <td>${escapeHtml(emp.team_name || '–')}</td>
           <td>${escapeHtml(jobDescMap.get(emp.job_description_id) || '–')}</td>
           <td class="num mono">${Number(emp.employment_pct).toFixed(2)}</td>
