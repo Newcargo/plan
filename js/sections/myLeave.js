@@ -18,10 +18,7 @@ const APP_URL = 'https://newcargo.github.io/plan/';
 // Ermittelt alle Projekt Approver (An) und Admins (Cc, ohne Dopplungen) mit hinterlegter E-Mail,
 // baut daraus einen mailto-Link und oeffnet ihn. Gibt true zurueck, falls jemand gefunden wurde.
 async function notifyApprovers(supabase, t, employeeName, startDate, endDate, dayPortion, isReminder, isExternal, discussedWithTeam) {
-  const { data: roleRows, error } = await supabase
-    .from('user_roles')
-    .select('role, employees!user_roles_user_id_fkey(email)')
-    .in('role', ['stufe2_genehmiger', 'admin', 'people_pool_manager']);
+  const { data: roleRows, error } = await supabase.rpc('get_notification_recipients');
 
   if (error) return false;
 
@@ -29,11 +26,10 @@ async function notifyApprovers(supabase, t, employeeName, startDate, endDate, da
   const adminEmails = new Set();
   const ppmEmails = new Set();
   (roleRows || []).forEach(r => {
-    const email = r.employees?.email;
-    if (!email) return;
-    if (r.role === 'stufe2_genehmiger') approverEmails.add(email);
-    if (r.role === 'admin') adminEmails.add(email);
-    if (r.role === 'people_pool_manager') ppmEmails.add(email);
+    if (!r.email) return;
+    if (r.role === 'stufe2_genehmiger') approverEmails.add(r.email);
+    if (r.role === 'admin') adminEmails.add(r.email);
+    if (r.role === 'people_pool_manager') ppmEmails.add(r.email);
   });
 
   let toEmails = [...approverEmails];

@@ -6,9 +6,35 @@
 //
 // Bei jeder Aenderung: APP_VERSION anpassen UND einen neuen Eintrag oben in CHANGELOG ergaenzen.
 
-export const APP_VERSION = '1.27.1';
+export const APP_VERSION = '1.27.3';
 
 export const CHANGELOG = [
+  {
+    version: '1.27.3',
+    date: '2026-08-23',
+    changes: {
+      de: [
+        'Fehlerbehebung (wichtig): Normale Mitarbeitende und Projekt Approver (nicht-Admin) konnten die E-Mail-Adressen der Genehmiger/Admin/PPM nicht abfragen (Berechtigungs-Einschränkung), wodurch "Kein Empfänger gefunden" erschien und Genehmigungs- sowie PPM-Weiterleitungs-Mails ausblieben',
+        'Neue, eng begrenzte Datenbank-Funktion erlaubt nur diese eine sichere Abfrage, ohne die generelle Einschränkung auf Rollen-Daten aufzuweichen',
+      ],
+      en: [
+        'Bug fix (important): regular employees and project approvers (non-admin) could not look up the email addresses of approvers/admin/PPM (permission restriction), causing "no recipients found" and preventing approval and PPM-forwarding emails from being sent',
+        'New, narrowly scoped database function allows only this one safe lookup, without loosening the general restriction on role data',
+      ],
+    },
+  },
+  {
+    version: '1.27.2',
+    date: '2026-08-23',
+    changes: {
+      de: [
+        'Fehlerbehebung (wichtig): Bei Genehmigung eines externen Antrags öffnete sich die PPM-Mail nicht - ein bewusst eingebautes setTimeout hat den zweiten mailto-Aufruf ausserhalb des direkten Klick-Kontexts ausgelöst, was Browser oft lautlos blockieren. Beide Mails feuern jetzt synchron im selben Klick',
+      ],
+      en: [
+        'Bug fix (important): the PPM email did not open when approving an external request - a deliberately added setTimeout triggered the second mailto call outside the direct click context, which browsers often block silently. Both emails now fire synchronously within the same click',
+      ],
+    },
+  },
   {
     version: '1.27.1',
     date: '2026-08-23',

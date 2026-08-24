@@ -28,11 +28,8 @@ function commentLine(r) {
 }
 
 async function getPpmEmails() {
-  const { data } = await supabase
-    .from('user_roles')
-    .select('employees!user_roles_user_id_fkey(email)')
-    .eq('role', 'people_pool_manager');
-  return [...new Set((data || []).map(row => row.employees?.email).filter(Boolean))];
+  const { data } = await supabase.rpc('get_notification_recipients');
+  return [...new Set((data || []).filter(r => r.role === 'people_pool_manager' && r.email).map(r => r.email))];
 }
 
 // Sendet die Entscheidungs-Mail(s) fuer einen Antrag: an den Antragsteller immer,
@@ -64,8 +61,9 @@ async function sendDecisionMail(r, approverName, decision) {
           .replaceAll('{period}', periodText(r))
           .replaceAll('{portion}', portionText(r))
           .replaceAll('{link}', APP_URL);
-        // Getrennter Mailclient-Aufruf, damit beide Mails zuverlaessig einzeln aufgehen
-        setTimeout(() => openMailto({ to: ppmEmails, subject: ppmSubject, body: ppmBody }), 400);
+        // WICHTIG: synchron innerhalb desselben Klicks aufrufen, kein setTimeout -
+        // Browser blockieren mailto-Aufrufe ausserhalb des direkten Nutzer-Klick-Kontexts oft lautlos.
+        openMailto({ to: ppmEmails, subject: ppmSubject, body: ppmBody });
       }
     }
     return sentToEmployee;
