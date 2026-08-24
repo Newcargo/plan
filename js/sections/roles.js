@@ -88,7 +88,7 @@ export async function renderRoles(container) {
         <input type="email" id="mf-email" required>
 
         ${fieldLabel(t('roles.defaultPassword'), t('roles.defaultPasswordHint'))}
-        <input type="text" id="mf-password" minlength="8" required>
+        <input type="text" id="mf-password" required>
       </div>
     `;
   }

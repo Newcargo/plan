@@ -169,16 +169,28 @@ function renderSidebarUser() {
   el.onclick = openPasswordModal;
 }
 
+// Passwort-Regeln fuer selbst gesetzte Passwoerter (Erst-Login, "Mein Konto").
+// Gilt NICHT fuer Admin-vergebene Start-/Reset-Passwoerter - die duerfen bewusst
+// unbeschraenkt sein, da der Mitarbeiter sie beim naechsten Login ohnehin ersetzen muss.
+function validatePasswordRules(pw) {
+  const missing = [];
+  if (pw.length < 12) missing.push(t('password.ruleLength'));
+  if (!/[0-9]/.test(pw)) missing.push(t('password.ruleDigit'));
+  if (!/[^A-Za-z0-9]/.test(pw)) missing.push(t('password.ruleSpecial'));
+  return missing;
+}
+
 function openPasswordModal() {
   const modal = openFormModal({
     title: t('account.title'),
     bodyHtml: `
       <div class="form-grid">
         <label>${t('forcePw.new')}</label>
-        <input type="password" id="mf-new-pw" required minlength="8" autocomplete="new-password">
+        <input type="password" id="mf-new-pw" required minlength="12" autocomplete="new-password">
         <label>${t('forcePw.confirm')}</label>
-        <input type="password" id="mf-confirm-pw" required minlength="8" autocomplete="new-password">
+        <input type="password" id="mf-confirm-pw" required minlength="12" autocomplete="new-password">
       </div>
+      <p style="color:var(--text-muted); font-size:0.78rem; margin:-0.6rem 0 1rem;">${t('password.hint')}</p>
       <p id="mf-pw-error" class="error-text" hidden></p>
     `,
     submitLabel: t('account.changePassword'),
@@ -196,8 +208,9 @@ function openPasswordModal() {
       errEl.hidden = false;
       return;
     }
-    if (newPw.length < 8) {
-      errEl.textContent = t('forcePw.tooShort');
+    const missing = validatePasswordRules(newPw);
+    if (missing.length) {
+      errEl.textContent = t('password.missingPrefix') + missing.join(', ');
       errEl.hidden = false;
       return;
     }
@@ -270,8 +283,9 @@ document.getElementById('force-password-form').addEventListener('submit', async 
     errEl.hidden = false;
     return;
   }
-  if (newPw.length < 8) {
-    errEl.textContent = t('forcePw.tooShort');
+  const missing = validatePasswordRules(newPw);
+  if (missing.length) {
+    errEl.textContent = t('password.missingPrefix') + missing.join(', ');
     errEl.hidden = false;
     return;
   }

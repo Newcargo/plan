@@ -6,9 +6,25 @@
 //
 // Bei jeder Aenderung: APP_VERSION anpassen UND einen neuen Eintrag oben in CHANGELOG ergaenzen.
 
-export const APP_VERSION = '1.24.1';
+export const APP_VERSION = '1.25.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.25.0',
+    date: '2026-08-23',
+    changes: {
+      de: [
+        'Neue Passwort-Regeln für selbst gesetzte Passwörter (Erst-Login und "Mein Konto"): mindestens 12 Zeichen, mindestens eine Zahl, mindestens ein Sonderzeichen',
+        'Sichtbarer Hinweis zu den Regeln unter dem Passwort-Feld, klare Fehlermeldung listet genau auf, was noch fehlt',
+        'Admin-vergebene Start-/Reset-Passwörter bleiben bewusst unbeschränkt (auch serverseitig), da der Mitarbeiter sie beim nächsten Login ohnehin ersetzen muss',
+      ],
+      en: [
+        'New password rules for self-set passwords (first login and "My account"): at least 12 characters, at least one number, at least one special character',
+        'Visible hint about the rules under the password field, clear error message lists exactly what is still missing',
+        'Admin-assigned starting/reset passwords remain deliberately unrestricted (server-side too), since the employee has to replace them at their next login anyway',
+      ],
+    },
+  },
   {
     version: '1.24.1',
     date: '2026-08-23',

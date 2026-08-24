@@ -36,12 +36,13 @@
     <form id="force-password-form">
       <div class="field">
         <label data-i18n="forcePw.new">Neues Passwort</label>
-        <input type="password" id="force-pw-new" required minlength="8" autocomplete="new-password">
+        <input type="password" id="force-pw-new" required minlength="12" autocomplete="new-password">
       </div>
       <div class="field">
         <label data-i18n="forcePw.confirm">Neues Passwort bestätigen</label>
-        <input type="password" id="force-pw-confirm" required minlength="8" autocomplete="new-password">
+        <input type="password" id="force-pw-confirm" required minlength="12" autocomplete="new-password">
       </div>
+      <p style="color:var(--text-muted); font-size:0.78rem; margin:-0.6rem 0 1rem;" data-i18n="password.hint">Mindestens 12 Zeichen, mindestens eine Zahl und ein Sonderzeichen.</p>
       <button type="submit" class="btn btn-primary btn-block" data-i18n="forcePw.submit">Passwort festlegen</button>
       <p id="force-pw-error" class="error-text" hidden></p>
     </form>
