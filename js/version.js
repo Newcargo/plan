@@ -6,9 +6,21 @@
 //
 // Bei jeder Aenderung: APP_VERSION anpassen UND einen neuen Eintrag oben in CHANGELOG ergaenzen.
 
-export const APP_VERSION = '1.27.0';
+export const APP_VERSION = '1.27.1';
 
 export const CHANGELOG = [
+  {
+    version: '1.27.1',
+    date: '2026-08-23',
+    changes: {
+      de: [
+        'Admin kann eigene abgelehnte Anträge jetzt auch direkt in "Mein Urlaub" löschen (bisher nur in "Genehmigungen" möglich)',
+      ],
+      en: [
+        'Admin can now also delete their own rejected requests directly in "My Leave" (previously only possible in "Approvals")',
+      ],
+    },
+  },
   {
     version: '1.27.0',
     date: '2026-08-23',

@@ -325,6 +325,9 @@ export async function renderMyLeave(container, context) {
       }
       if (lr.status === 'abgelehnt') {
         actions += `<button type="button" class="btn btn-secondary reapply-btn">${t('myLeave.reapply')}</button>`;
+        if (isAdmin) {
+          actions += iconButton(ICON_DELETE, t('common.delete'), 'admin-delete-rejected-btn');
+        }
       }
       if (lr.status === 'genehmigt_projekt') {
         actions += `<button type="button" class="btn btn-secondary confirm-final-btn">${t('myLeave.confirmFinal')}</button>`;
@@ -368,6 +371,16 @@ export async function renderMyLeave(container, context) {
     tbody.querySelectorAll('.delete-storniert-btn').forEach(btn => {
       btn.addEventListener('click', async () => {
         if (!confirm(t('myLeave.deleteStornoConfirm'))) return;
+        const id = btn.closest('tr').dataset.id;
+        const { error } = await supabase.from('leave_requests').delete().eq('id', id);
+        if (error) { alert(t('common.error') + '\n' + error.message); return; }
+        load();
+      });
+    });
+
+    tbody.querySelectorAll('.admin-delete-rejected-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        if (!confirm(t('common.confirmDelete'))) return;
         const id = btn.closest('tr').dataset.id;
         const { error } = await supabase.from('leave_requests').delete().eq('id', id);
         if (error) { alert(t('common.error') + '\n' + error.message); return; }
