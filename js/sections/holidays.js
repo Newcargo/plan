@@ -1,13 +1,12 @@
 import { supabase } from '../supabaseClient.js';
 import { t } from '../i18n.js';
 import { ICON_EDIT, ICON_DELETE, iconButton, fieldLabel } from '../icons.js';
-import { createSortState, sortableHeader, wireSortHeaders, sortArray } from '../sortable.js';
 import { formatDate, todayISO } from '../dateFormat.js';
 import { openFormModal } from '../modal.js';
 
 export async function renderHolidays(container) {
-  const sortState = createSortState('date', false);
   let holidaysData = [];
+  const expandedYears = new Set();
 
   container.innerHTML = `
     <header><h1>${t('nav.holidays')}</h1></header>
@@ -16,23 +15,9 @@ export async function renderHolidays(container) {
         <div></div>
         <button type="button" class="btn btn-primary" id="open-add-btn">${t('common.add')}</button>
       </div>
-      <table>
-        <thead><tr id="hol-thead-row"></tr></thead>
-        <tbody id="hol-tbody"><tr><td colspan="4" class="empty-state">${t('common.loading')}</td></tr></tbody>
-      </table>
+      <div id="hol-groups"><p class="empty-state">${t('common.loading')}</p></div>
     </div>
   `;
-
-  function wireHead() {
-    const row = document.getElementById('hol-thead-row');
-    row.innerHTML = `
-      ${sortableHeader(t('holidays.date'), 'date', sortState)}
-      ${sortableHeader(t('holidays.name'), 'name', sortState)}
-      <th>${t('holidays.note')}</th><th></th>
-    `;
-    wireSortHeaders(row, sortState, () => { renderRows(); wireHead(); });
-  }
-  wireHead();
 
   function formBody(h) {
     return `
@@ -59,6 +44,7 @@ export async function renderHolidays(container) {
       };
       const { error } = await supabase.from('holidays').insert(payload);
       if (error) { alert(t('common.error') + '\n' + error.message); return; }
+      expandedYears.add(payload.date.slice(0, 4));
       modal.close();
       load();
     });
@@ -82,44 +68,77 @@ export async function renderHolidays(container) {
   document.getElementById('open-add-btn').addEventListener('click', openAdd);
 
   async function load() {
-    const tbody = document.getElementById('hol-tbody');
+    const container = document.getElementById('hol-groups');
     const { data, error } = await supabase.from('holidays').select('*');
-    if (error) { tbody.innerHTML = `<tr><td colspan="4" class="empty-state">${t('common.error')}</td></tr>`; return; }
+    if (error) { container.innerHTML = `<p class="empty-state">${t('common.error')}</p>`; return; }
     holidaysData = data || [];
-    renderRows();
+    renderGroups();
   }
 
-  function renderRows() {
-    const tbody = document.getElementById('hol-tbody');
-    if (!holidaysData.length) { tbody.innerHTML = `<tr><td colspan="4" class="empty-state">${t('common.none')}</td></tr>`; return; }
+  function renderGroups() {
+    const container = document.getElementById('hol-groups');
+    if (!holidaysData.length) { container.innerHTML = `<p class="empty-state">${t('common.none')}</p>`; return; }
 
-    sortArray(holidaysData, sortState);
+    const grouped = new Map();
+    holidaysData.forEach(h => {
+      const year = h.date.slice(0, 4);
+      if (!grouped.has(year)) grouped.set(year, []);
+      grouped.get(year).push(h);
+    });
+    const years = [...grouped.keys()].sort((a, b) => b.localeCompare(a));
     const today = todayISO();
 
-    tbody.innerHTML = holidaysData.map(h => {
-      const isPast = h.date < today;
+    container.innerHTML = years.map(year => {
+      const items = grouped.get(year).sort((a, b) => a.date.localeCompare(b.date));
+      const isOpen = expandedYears.has(year);
       return `
-        <tr data-id="${h.id}" class="${isPast ? 'row-past' : ''}">
-          <td class="mono">${formatDate(h.date)}</td>
-          <td>${escapeHtml(h.name)}</td>
-          <td>${escapeHtml(h.note || '')}</td>
-          <td class="row-actions">
-            ${iconButton(ICON_EDIT, t('common.edit'), 'edit-btn')}
-            ${iconButton(ICON_DELETE, t('common.delete'), 'delete-btn')}
-          </td>
-        </tr>
+        <div class="year-group">
+          <div class="year-group-header" data-year="${year}">
+            <span class="year-chevron">${isOpen ? '▾' : '▸'}</span>
+            <span>${year}</span>
+            <span class="year-count">(${items.length})</span>
+          </div>
+          <div class="year-group-body" ${isOpen ? '' : 'hidden'}>
+            <table>
+              <thead><tr><th>${t('holidays.date')}</th><th>${t('holidays.name')}</th><th>${t('holidays.note')}</th><th></th></tr></thead>
+              <tbody>
+                ${items.map(h => `
+                  <tr data-id="${h.id}" class="${h.date < today ? 'row-past' : ''}">
+                    <td class="mono">${formatDate(h.date)}</td>
+                    <td>${escapeHtml(h.name)}</td>
+                    <td>${escapeHtml(h.note || '')}</td>
+                    <td class="row-actions">
+                      ${iconButton(ICON_EDIT, t('common.edit'), 'edit-btn')}
+                      ${iconButton(ICON_DELETE, t('common.delete'), 'delete-btn')}
+                    </td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
       `;
     }).join('');
 
-    tbody.querySelectorAll('.edit-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
+    container.querySelectorAll('.year-group-header').forEach(header => {
+      header.addEventListener('click', () => {
+        const year = header.dataset.year;
+        if (expandedYears.has(year)) expandedYears.delete(year); else expandedYears.add(year);
+        renderGroups();
+      });
+    });
+
+    container.querySelectorAll('.edit-btn').forEach(btn => {
+      btn.addEventListener('click', e => {
+        e.stopPropagation();
         const id = btn.closest('tr').dataset.id;
         openEdit(holidaysData.find(x => x.id === id));
       });
     });
 
-    tbody.querySelectorAll('.delete-btn').forEach(btn => {
-      btn.addEventListener('click', async () => {
+    container.querySelectorAll('.delete-btn').forEach(btn => {
+      btn.addEventListener('click', async e => {
+        e.stopPropagation();
         if (!confirm(t('common.confirmDelete'))) return;
         const id = btn.closest('tr').dataset.id;
         const { error } = await supabase.from('holidays').delete().eq('id', id);

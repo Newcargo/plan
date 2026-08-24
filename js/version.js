@@ -6,9 +6,37 @@
 //
 // Bei jeder Aenderung: APP_VERSION anpassen UND einen neuen Eintrag oben in CHANGELOG ergaenzen.
 
-export const APP_VERSION = '1.21.1';
+export const APP_VERSION = '1.22.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.22.0',
+    date: '2026-08-23',
+    changes: {
+      de: [
+        'Feiertage und Sperrzeiten sind jetzt nach Jahr gruppiert, jede Jahres-Gruppe auf-/zuklappbar, standardmässig alle zugeklappt, neueste Jahre oben',
+        'Neu angelegte Einträge klappen ihr Jahr automatisch auf',
+        'Hinweis: Die klickbare Spalten-Sortierung (A-Z/Z-A) ist bei diesen beiden Seiten dadurch weggefallen, da die Jahres-Gruppierung diese Funktion ersetzt (innerhalb eines Jahres chronologisch sortiert). Bei allen anderen Listen bleibt die Sortierung unverändert bestehen',
+      ],
+      en: [
+        'Holidays and blocked periods are now grouped by year, each year collapsible, all collapsed by default, newest years on top',
+        'Newly created entries automatically expand their year',
+        'Note: the clickable column sorting (A-Z/Z-A) is gone on these two pages since the year grouping replaces it (chronological within each year). All other lists keep sorting unchanged',
+      ],
+    },
+  },
+  {
+    version: '1.21.2',
+    date: '2026-08-23',
+    changes: {
+      de: [
+        'Audit-Log in der Navigation zu "Sonstiges" verschoben, direkt neben Change-Log',
+      ],
+      en: [
+        'Moved Audit log in the navigation to "Other", right next to Change log',
+      ],
+    },
+  },
   {
     version: '1.21.1',
     date: '2026-08-23',

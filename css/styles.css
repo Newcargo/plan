@@ -283,6 +283,18 @@ tr:last-child td { border-bottom: none; }
 
 .empty-state { color: var(--text-muted); font-size: 0.9rem; padding: 1rem 0; }
 
+/* Jahres-Gruppen (Feiertage, Sperrzeiten) - auf-/zuklappbar */
+.year-group { border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 0.75rem; overflow: hidden; }
+.year-group-header {
+  display: flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1rem; cursor: pointer;
+  background: var(--bg); font-family: var(--font-display); font-weight: 600; font-size: 0.95rem;
+}
+.year-group-header:hover { background: var(--border); }
+.year-chevron { font-size: 0.7rem; color: var(--text-muted); width: 10px; }
+.year-count { font-family: var(--font-mono); font-weight: 400; font-size: 0.8rem; color: var(--text-muted); }
+.year-group-body table { margin: 0; }
+.year-group-body table th, .year-group-body table td { border-left: none; border-right: none; }
+
 /* Bestaetigungs-Modal */
 .modal-overlay {
   position: fixed; inset: 0; background: rgba(20, 24, 31, 0.6);
