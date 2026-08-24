@@ -3,6 +3,7 @@ import { t } from '../i18n.js';
 import { ICON_DELETE, iconButton, fieldLabel, infoIcon } from '../icons.js';
 import { formatDate, todayISO } from '../dateFormat.js';
 import { showConfirmModal } from '../modal.js';
+import { openMailto } from '../mailer.js';
 
 const STATUS_META = {
   beantragt: { label: 'Beantragt', cls: 'badge-warn' },
@@ -12,7 +13,7 @@ const STATUS_META = {
   storniert: { label: 'Storniert', cls: 'badge-muted' },
 };
 
-const APP_URL = 'https://newcargo.github.io/Plan-/';
+const APP_URL = 'https://newcargo.github.io/plan/';
 
 // Ermittelt alle Projekt Approver (An) und Admins (Cc, ohne Dopplungen) mit hinterlegter E-Mail,
 // baut daraus einen mailto-Link und oeffnet ihn. Gibt true zurueck, falls jemand gefunden wurde.
@@ -39,7 +40,6 @@ async function notifyApprovers(supabase, t, employeeName, startDate, endDate, da
     toEmails = ccEmails;
     ccEmails = [];
   }
-  if (toEmails.length === 0) return false;
 
   const portionText = dayPortion !== 'ganztag' ? t('myLeave.dayPortion.' + dayPortion) : t('myLeave.dayPortion.ganztag');
   const periodText = startDate === endDate ? formatDate(startDate) : `${formatDate(startDate)} – ${formatDate(endDate)}`;
@@ -54,12 +54,7 @@ async function notifyApprovers(supabase, t, employeeName, startDate, endDate, da
     .replaceAll('{portion}', portionText)
     .replaceAll('{link}', APP_URL);
 
-  const mailtoHref = `mailto:${toEmails.join(',')}?cc=${ccEmails.join(',')}&subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-
-  const a = document.createElement('a');
-  a.href = mailtoHref;
-  a.click();
-  return true;
+  return openMailto({ to: toEmails, cc: ccEmails, subject, body });
 }
 
 export async function renderMyLeave(container, context) {
@@ -234,12 +229,21 @@ export async function renderMyLeave(container, context) {
       return;
     }
 
+    // Nicht-blockierende Info-Abfrage fuer den Genehmiger, kein Abbruch bei "Nein"
+    const discussedWithTeam = await showConfirmModal({
+      title: t('myLeave.discussedTitle'),
+      message: t('myLeave.discussedMessage'),
+      confirmLabel: t('common.yes'),
+      cancelLabel: t('common.no'),
+    });
+
     const { error } = await supabase.from('leave_requests').insert({
       employee_id: employee.id,
       start_date: start,
       end_date: end,
       day_portion: portionSelect.value,
       is_external_process: isExternal,
+      discussed_with_team: discussedWithTeam,
     });
 
     if (error) {

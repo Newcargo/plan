@@ -3,6 +3,7 @@ import { t } from '../i18n.js';
 import { formatDate, businessDaysSince } from '../dateFormat.js';
 import { showConfirmModal } from '../modal.js';
 import { ICON_DELETE, iconButton } from '../icons.js';
+import { openMailto } from '../mailer.js';
 
 const STATUS_META = {
   beantragt: { label: 'Beantragt', cls: 'badge-warn' },
@@ -12,9 +13,80 @@ const STATUS_META = {
   storniert: { label: 'Storniert', cls: 'badge-muted' },
 };
 
+const APP_URL = 'https://newcargo.github.io/plan/';
+
+function periodText(r) {
+  return r.start_date === r.end_date ? formatDate(r.start_date) : `${formatDate(r.start_date)} – ${formatDate(r.end_date)}`;
+}
+
+function portionText(r) {
+  return r.day_portion !== 'ganztag' ? t('myLeave.dayPortion.' + r.day_portion) : t('myLeave.dayPortion.ganztag');
+}
+
+function commentLine(r) {
+  return t('approvals.mailCommentLine').replaceAll('{comment}', r.comment_stufe2 || '-');
+}
+
+async function getPpmEmails() {
+  const { data } = await supabase
+    .from('user_roles')
+    .select('employees!user_roles_user_id_fkey(email)')
+    .eq('role', 'people_pool_manager');
+  return [...new Set((data || []).map(row => row.employees?.email).filter(Boolean))];
+}
+
+// Sendet die Entscheidungs-Mail(s) fuer einen Antrag: an den Antragsteller immer,
+// bei Genehmigung + extern zusaetzlich an alle People Pool Manager.
+async function sendDecisionMail(r, approverName, decision) {
+  const employeeEmail = r.employees?.email;
+  const employeeName = r.employees?.full_name || '';
+  const isExternal = !!r.employees?.is_external;
+
+  if (decision === 'approved') {
+    const subject = t('approvals.mailApprovedSubject');
+    const bodyKey = isExternal ? 'approvals.mailApprovedExternBody' : 'approvals.mailApprovedInternBody';
+    const body = t(bodyKey)
+      .replaceAll('{name}', employeeName)
+      .replaceAll('{approver}', approverName)
+      .replaceAll('{period}', periodText(r))
+      .replaceAll('{portion}', portionText(r))
+      .replaceAll('{comment}', commentLine(r))
+      .replaceAll('{link}', APP_URL);
+    const sentToEmployee = openMailto({ to: [employeeEmail], subject, body });
+
+    if (isExternal) {
+      const ppmEmails = await getPpmEmails();
+      if (ppmEmails.length) {
+        const ppmSubject = t('approvals.mailPpmForwardSubject');
+        const ppmBody = t('approvals.mailPpmForwardBody')
+          .replaceAll('{name}', employeeName)
+          .replaceAll('{approver}', approverName)
+          .replaceAll('{period}', periodText(r))
+          .replaceAll('{portion}', portionText(r))
+          .replaceAll('{link}', APP_URL);
+        // Getrennter Mailclient-Aufruf, damit beide Mails zuverlaessig einzeln aufgehen
+        setTimeout(() => openMailto({ to: ppmEmails, subject: ppmSubject, body: ppmBody }), 400);
+      }
+    }
+    return sentToEmployee;
+  }
+
+  // decision === 'rejected'
+  const subject = t('approvals.mailRejectedSubject');
+  const body = t('approvals.mailRejectedBody')
+    .replaceAll('{name}', employeeName)
+    .replaceAll('{approver}', approverName)
+    .replaceAll('{period}', periodText(r))
+    .replaceAll('{portion}', portionText(r))
+    .replaceAll('{comment}', commentLine(r))
+    .replaceAll('{link}', APP_URL);
+  return openMailto({ to: [employeeEmail], subject, body });
+}
+
 export async function renderApprovals(container, context) {
   const roles = (context && context.roles) || new Set();
   const currentEmployeeId = context && context.employee && context.employee.id;
+  const currentEmployeeName = context && context.employee && context.employee.full_name;
   const canApprove = roles.has('stufe2_genehmiger') || roles.has('admin');
   const isAdmin = roles.has('admin');
 
@@ -48,9 +120,9 @@ export async function renderApprovals(container, context) {
           <th>${t('myLeave.statusCol')}</th>
           <th>${t('myLeave.comment')}</th>
           <th>${t('approvals.processedBy')}</th>
-          ${isAdmin ? '<th></th>' : ''}
+          <th></th>
         </tr></thead>
-        <tbody id="history-tbody"><tr><td colspan="${isAdmin ? 6 : 5}" class="empty-state">${t('common.loading')}</td></tr></tbody>
+        <tbody id="history-tbody"><tr><td colspan="6" class="empty-state">${t('common.loading')}</td></tr></tbody>
       </table>
     </div>
   `;
@@ -61,16 +133,22 @@ export async function renderApprovals(container, context) {
     }[s]));
   }
 
+  function discussedBadge(r) {
+    return r.discussed_with_team
+      ? `<span class="badge badge-success" title="${t('approvals.discussedYes')}">${t('approvals.discussedYesShort')}</span>`
+      : `<span class="badge badge-warn" title="${t('approvals.discussedNo')}">${t('approvals.discussedNoShort')}</span>`;
+  }
+
   async function loadAll() {
     const { data, error } = await supabase
       .from('leave_requests')
-      .select('id, start_date, end_date, status, day_portion, comment_stufe2, created_at, employee_id, employees!leave_requests_employee_id_fkey(full_name, is_external), approver:employees!leave_requests_approved_by_fkey(full_name)')
+      .select('id, start_date, end_date, status, day_portion, comment_stufe2, created_at, discussed_with_team, employee_id, employees!leave_requests_employee_id_fkey(full_name, is_external, email), approver:employees!leave_requests_approved_by_fkey(full_name)')
       .order('start_date', { ascending: false });
 
     if (error) {
       ['pending-tbody', 'history-tbody'].forEach(id => {
         const el = document.getElementById(id);
-        if (el) el.innerHTML = `<tr><td colspan="${isAdmin ? 6 : 5}" class="empty-state">${t('common.error')}</td></tr>`;
+        if (el) el.innerHTML = `<tr><td colspan="6" class="empty-state">${t('common.error')}</td></tr>`;
       });
       return;
     }
@@ -101,6 +179,7 @@ export async function renderApprovals(container, context) {
         <tr data-id="${r.id}" class="${isAged ? 'row-past' : ''}">
           <td>${escapeHtml(r.employees?.full_name || '–')}
             ${isAged ? `<span class="badge badge-danger">${t('approvals.waitingDays').replace('{days}', waitingDays)}</span>` : ''}
+            ${discussedBadge(r)}
           </td>
           <td class="mono">${formatDate(r.start_date)} – ${formatDate(r.end_date)}${r.day_portion !== 'ganztag' ? ` (${t('myLeave.dayPortion.' + r.day_portion)})` : ''}${warningHtml}</td>
           <td class="row-actions">
@@ -114,6 +193,7 @@ export async function renderApprovals(container, context) {
     tbody.querySelectorAll('.approve-btn').forEach(btn => {
       btn.addEventListener('click', async () => {
         const id = btn.closest('tr').dataset.id;
+        const rowData = rows.find(r => r.id === id);
         const comment = prompt(t('approvals.approveCommentPrompt')) || null;
         const { error } = await supabase.from('leave_requests').update({
           status: 'genehmigt_projekt',
@@ -122,6 +202,7 @@ export async function renderApprovals(container, context) {
           approved_at: new Date().toISOString(),
         }).eq('id', id);
         if (error) { alert(t('common.error') + '\n' + error.message); return; }
+        await sendDecisionMail({ ...rowData, comment_stufe2: comment }, currentEmployeeName, 'approved');
         loadAll();
       });
     });
@@ -129,6 +210,7 @@ export async function renderApprovals(container, context) {
     tbody.querySelectorAll('.reject-btn').forEach(btn => {
       btn.addEventListener('click', async () => {
         const id = btn.closest('tr').dataset.id;
+        const rowData = rows.find(r => r.id === id);
         let comment = prompt(t('approvals.rejectCommentPrompt'));
         while (comment !== null && !comment.trim()) {
           comment = prompt(t('approvals.rejectCommentRequired'));
@@ -140,6 +222,7 @@ export async function renderApprovals(container, context) {
           approved_by: currentEmployeeId,
         }).eq('id', id);
         if (error) { alert(t('common.error') + '\n' + error.message); return; }
+        await sendDecisionMail({ ...rowData, comment_stufe2: comment.trim() }, currentEmployeeName, 'rejected');
         loadAll();
       });
     });
@@ -147,25 +230,38 @@ export async function renderApprovals(container, context) {
 
   function renderHistory(rows) {
     const tbody = document.getElementById('history-tbody');
-    if (!rows.length) { tbody.innerHTML = `<tr><td colspan="${isAdmin ? 6 : 5}" class="empty-state">${t('common.none')}</td></tr>`; return; }
+    if (!rows.length) { tbody.innerHTML = `<tr><td colspan="6" class="empty-state">${t('common.none')}</td></tr>`; return; }
 
     tbody.innerHTML = rows.map(r => {
       const meta = STATUS_META[r.status] || { label: r.status, cls: 'badge-muted' };
       const canStorno = isAdmin && ['beantragt', 'genehmigt_projekt', 'final_gebucht'].includes(r.status);
+      const canResend = canApprove && ['genehmigt_projekt', 'abgelehnt'].includes(r.status);
       return `
         <tr data-id="${r.id}">
-          <td>${escapeHtml(r.employees?.full_name || '–')}${r.employees?.is_external ? ` <span class="badge badge-muted">extern</span>` : ''}</td>
+          <td>${escapeHtml(r.employees?.full_name || '–')}${r.employees?.is_external ? ` <span class="badge badge-muted">extern</span>` : ''} ${discussedBadge(r)}</td>
           <td class="mono">${formatDate(r.start_date)} – ${formatDate(r.end_date)}${r.day_portion !== 'ganztag' ? ` (${t('myLeave.dayPortion.' + r.day_portion)})` : ''}</td>
           <td><span class="badge ${meta.cls}">${t('myLeave.status.' + r.status) || meta.label}</span></td>
           <td>${escapeHtml(r.comment_stufe2 || '')}</td>
           <td>${escapeHtml(r.approver?.full_name || '–')}</td>
-          ${isAdmin ? `<td class="row-actions">
-            ${canStorno ? `<button type="button" class="btn btn-danger admin-storno-btn">${t('myLeave.storno')}</button>` : ''}
-            ${iconButton(ICON_DELETE, t('common.delete'), 'admin-delete-btn')}
-          </td>` : ''}
+          <td class="row-actions">
+            ${canResend ? `<button type="button" class="btn btn-secondary resend-btn">${t('approvals.resendMail')}</button>` : ''}
+            ${isAdmin && canStorno ? `<button type="button" class="btn btn-danger admin-storno-btn">${t('myLeave.storno')}</button>` : ''}
+            ${isAdmin ? iconButton(ICON_DELETE, t('common.delete'), 'admin-delete-btn') : ''}
+          </td>
         </tr>
       `;
     }).join('');
+
+    tbody.querySelectorAll('.resend-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = btn.closest('tr').dataset.id;
+        const rowData = rows.find(r => r.id === id);
+        const decision = rowData.status === 'genehmigt_projekt' ? 'approved' : 'rejected';
+        const approverName = rowData.approver?.full_name || currentEmployeeName;
+        const sent = await sendDecisionMail(rowData, approverName, decision);
+        if (!sent) alert(t('myLeave.noRecipientsHint'));
+      });
+    });
 
     tbody.querySelectorAll('.admin-storno-btn').forEach(btn => {
       btn.addEventListener('click', async () => {

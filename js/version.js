@@ -6,9 +6,43 @@
 //
 // Bei jeder Aenderung: APP_VERSION anpassen UND einen neuen Eintrag oben in CHANGELOG ergaenzen.
 
-export const APP_VERSION = '1.25.1';
+export const APP_VERSION = '1.26.1';
 
 export const CHANGELOG = [
+  {
+    version: '1.26.1',
+    date: '2026-08-23',
+    changes: {
+      de: [
+        'App-Link in allen Mails korrigiert auf https://newcargo.github.io/plan/',
+        'Kommentar-Zeile erscheint jetzt immer in den Genehmigt/Abgelehnt-Mails, auch ohne Kommentar (dann mit "-")',
+      ],
+      en: [
+        'Fixed the app link in all emails to https://newcargo.github.io/plan/',
+        'The comment line now always appears in the approved/rejected emails, even without a comment (shown as "-")',
+      ],
+    },
+  },
+  {
+    version: '1.26.0',
+    date: '2026-08-23',
+    changes: {
+      de: [
+        'Genehmigt/Abgelehnt-Benachrichtigung: Beim Genehmigen oder Ablehnen eines Antrags öffnet sich automatisch eine vorausgefüllte Mail an den Antragsteller',
+        'Bei genehmigten Anträgen externer Kollegen geht zusätzlich eine separate Mail an alle People Pool Manager (Weiterleitung an RUAG Office)',
+        'Mail-Texte unterscheiden intern/extern und weisen deutlich (GROSSBUCHSTABEN + Sternchen) darauf hin, welche Schritte der Mitarbeiter noch SELBST erledigen muss',
+        '"Mail erneut senden"-Button bei bereits entschiedenen Anträgen in Genehmigungen',
+        'Neue Abfrage vor dem Beantragen: "Mit dem Team abgesprochen?" (Ja/Nein, blockiert nichts), Antwort wird dem Genehmiger als Badge angezeigt',
+      ],
+      en: [
+        'Approved/rejected notification: approving or rejecting a request automatically opens a pre-filled email to the requester',
+        'For approved requests from external colleagues, a separate email additionally goes to all People Pool Managers (forwarding to RUAG Office)',
+        'Email texts differ between internal/external and clearly flag (CAPS + asterisks) which steps the employee still needs to do THEMSELVES',
+        '"Resend email" button on already-decided requests in Approvals',
+        'New prompt before submitting a request: "Discussed with the team?" (Yes/No, does not block), the answer is shown to the approver as a badge',
+      ],
+    },
+  },
   {
     version: '1.25.1',
     date: '2026-08-23',
