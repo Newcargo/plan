@@ -6,9 +6,37 @@
 //
 // Bei jeder Aenderung: APP_VERSION anpassen UND einen neuen Eintrag oben in CHANGELOG ergaenzen.
 
-export const APP_VERSION = '1.26.1';
+export const APP_VERSION = '1.27.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.27.0',
+    date: '2026-08-23',
+    changes: {
+      de: [
+        'Fehlerbehebung (wichtig): Bei fehlender CC-Adresse (z.B. Ablehnungs-Mail) landete der Betreff fälschlich im CC-Feld statt im Betreff - lag an einem leeren "cc="-Parameter, den manche Mail-Programme falsch interpretieren. cc= wird jetzt nur noch angehängt, wenn wirklich eine Adresse vorhanden ist',
+        'Beantragungs-Mail (und Erinnerung) zeigt jetzt auch an, ob mit dem Team abgesprochen wurde',
+        'Neu: Bei externen Kollegen wird der People Pool Manager jetzt auch schon beim Beantragen (nicht nur bei Genehmigung) per Mail informiert',
+      ],
+      en: [
+        'Bug fix (important): when there was no CC address (e.g. rejection email), the subject incorrectly ended up in the CC field instead of the subject line - caused by an empty "cc=" parameter that some mail clients misparse. cc= is now only appended when an address is actually present',
+        'Submission email (and reminder) now also shows whether the team was consulted',
+        'New: for external colleagues, the People Pool Manager is now also notified by email at submission time (not just on approval)',
+      ],
+    },
+  },
+  {
+    version: '1.26.2',
+    date: '2026-08-23',
+    changes: {
+      de: [
+        'Beantragungs-Mail (und Erinnerung) zeigt jetzt eine Warnung, falls sich der Zeitraum mit einer Sperrzeit überschneidet - direkt sichtbar für den Genehmiger, ohne die App öffnen zu müssen',
+      ],
+      en: [
+        'The submission email (and reminder) now shows a warning if the period overlaps a blocked period - directly visible to the approver without opening the app',
+      ],
+    },
+  },
   {
     version: '1.26.1',
     date: '2026-08-23',

@@ -17,25 +17,32 @@ const APP_URL = 'https://newcargo.github.io/plan/';
 
 // Ermittelt alle Projekt Approver (An) und Admins (Cc, ohne Dopplungen) mit hinterlegter E-Mail,
 // baut daraus einen mailto-Link und oeffnet ihn. Gibt true zurueck, falls jemand gefunden wurde.
-async function notifyApprovers(supabase, t, employeeName, startDate, endDate, dayPortion, isReminder) {
+async function notifyApprovers(supabase, t, employeeName, startDate, endDate, dayPortion, isReminder, isExternal, discussedWithTeam) {
   const { data: roleRows, error } = await supabase
     .from('user_roles')
     .select('role, employees!user_roles_user_id_fkey(email)')
-    .in('role', ['stufe2_genehmiger', 'admin']);
+    .in('role', ['stufe2_genehmiger', 'admin', 'people_pool_manager']);
 
   if (error) return false;
 
   const approverEmails = new Set();
   const adminEmails = new Set();
+  const ppmEmails = new Set();
   (roleRows || []).forEach(r => {
     const email = r.employees?.email;
     if (!email) return;
     if (r.role === 'stufe2_genehmiger') approverEmails.add(email);
     if (r.role === 'admin') adminEmails.add(email);
+    if (r.role === 'people_pool_manager') ppmEmails.add(email);
   });
 
   let toEmails = [...approverEmails];
   let ccEmails = [...adminEmails].filter(e => !approverEmails.has(e));
+  // Bei externen Mitarbeitern soll der People Pool Manager ebenfalls informiert werden
+  // (muss den Antrag spaeter, nach Genehmigung, an RUAG Office weiterleiten)
+  if (isExternal) {
+    ppmEmails.forEach(e => { if (!approverEmails.has(e) && !ccEmails.includes(e)) ccEmails.push(e); });
+  }
   if (toEmails.length === 0 && ccEmails.length > 0) {
     toEmails = ccEmails;
     ccEmails = [];
@@ -43,6 +50,21 @@ async function notifyApprovers(supabase, t, employeeName, startDate, endDate, da
 
   const portionText = dayPortion !== 'ganztag' ? t('myLeave.dayPortion.' + dayPortion) : t('myLeave.dayPortion.ganztag');
   const periodText = startDate === endDate ? formatDate(startDate) : `${formatDate(startDate)} – ${formatDate(endDate)}`;
+  const discussedText = discussedWithTeam ? t('approvals.discussedYes') : t('approvals.discussedNo');
+
+  // Ueberschneidung mit Sperrzeiten pruefen, damit der Genehmiger das direkt in der Mail sieht
+  const { data: blockedHits } = await supabase
+    .from('blocked_periods')
+    .select('start_date, end_date, label')
+    .lte('start_date', endDate)
+    .gte('end_date', startDate);
+
+  const blockedWarning = (blockedHits && blockedHits.length)
+    ? blockedHits.map(bp => '⚠ ' + t('approvals.blockedWarning')
+        .replace('{label}', bp.label)
+        .replace('{start}', formatDate(bp.start_date))
+        .replace('{end}', formatDate(bp.end_date))).join('\n') + '\n\n'
+    : '';
 
   const subjectKey = isReminder ? 'myLeave.mailReminderSubject' : 'myLeave.mailSubject';
   const bodyKey = isReminder ? 'myLeave.mailReminderBody' : 'myLeave.mailBody';
@@ -52,6 +74,8 @@ async function notifyApprovers(supabase, t, employeeName, startDate, endDate, da
     .replaceAll('{name}', employeeName)
     .replaceAll('{period}', periodText)
     .replaceAll('{portion}', portionText)
+    .replaceAll('{discussed}', discussedText)
+    .replaceAll('{blockedWarning}', blockedWarning)
     .replaceAll('{link}', APP_URL);
 
   return openMailto({ to: toEmails, cc: ccEmails, subject, body });
@@ -252,7 +276,7 @@ export async function renderMyLeave(container, context) {
       return;
     }
 
-    const mailSent = await notifyApprovers(supabase, t, employee.full_name, start, end, portionSelect.value, false);
+    const mailSent = await notifyApprovers(supabase, t, employee.full_name, start, end, portionSelect.value, false, isExternal, discussedWithTeam);
     if (!mailSent) {
       msg.style.color = 'var(--text-muted)';
       msg.textContent = t('myLeave.noRecipientsHint');
@@ -276,7 +300,7 @@ export async function renderMyLeave(container, context) {
     const tbody = document.getElementById('leave-tbody');
     const { data, error } = await supabase
       .from('leave_requests')
-      .select('id, start_date, end_date, status, day_portion, comment_stufe2, approver:employees!leave_requests_approved_by_fkey(full_name)')
+      .select('id, start_date, end_date, status, day_portion, comment_stufe2, is_external_process, discussed_with_team, approver:employees!leave_requests_approved_by_fkey(full_name)')
       .eq('employee_id', employee.id)
       .order('start_date', { ascending: false });
 
@@ -336,7 +360,7 @@ export async function renderMyLeave(container, context) {
       btn.addEventListener('click', async () => {
         const row = btn.closest('tr');
         const lr = leaveData.find(x => x.id === row.dataset.id);
-        const sent = await notifyApprovers(supabase, t, employee.full_name, lr.start_date, lr.end_date, lr.day_portion, true);
+        const sent = await notifyApprovers(supabase, t, employee.full_name, lr.start_date, lr.end_date, lr.day_portion, true, lr.is_external_process, lr.discussed_with_team);
         if (!sent) alert(t('myLeave.noRecipientsHint'));
       });
     });
