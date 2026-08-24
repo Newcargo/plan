@@ -141,6 +141,7 @@ function showForcePassword() {
 
 async function showApp() {
   loginScreen.hidden = true;
+  forcePasswordScreen.hidden = true;
   appShell.hidden = false;
   setupNav();
   applyRoleVisibility();

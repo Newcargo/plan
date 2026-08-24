@@ -6,9 +6,21 @@
 //
 // Bei jeder Aenderung: APP_VERSION anpassen UND einen neuen Eintrag oben in CHANGELOG ergaenzen.
 
-export const APP_VERSION = '1.24.0';
+export const APP_VERSION = '1.24.1';
 
 export const CHANGELOG = [
+  {
+    version: '1.24.1',
+    date: '2026-08-23',
+    changes: {
+      de: [
+        'Fehlerbehebung: Nach dem Festlegen des neuen Passworts beim erzwungenen Erst-Login blieb der Passwort-Bildschirm unsichtbar über der bereits geladenen App liegen - showApp() blendete ihn nicht aus',
+      ],
+      en: [
+        'Bug fix: after setting the new password during the forced first-login flow, the password screen stayed invisibly on top of the already-loaded app - showApp() never hid it',
+      ],
+    },
+  },
   {
     version: '1.24.0',
     date: '2026-08-23',
