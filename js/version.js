@@ -6,9 +6,25 @@
 //
 // Bei jeder Aenderung: APP_VERSION anpassen UND einen neuen Eintrag oben in CHANGELOG ergaenzen.
 
-export const APP_VERSION = '1.22.0';
+export const APP_VERSION = '1.23.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.23.0',
+    date: '2026-08-23',
+    changes: {
+      de: [
+        'Audit-Log: Einträge jetzt nach Jahr und Monat gruppiert (beide auf-/zuklappbar, standardmässig alle zugeklappt)',
+        'Audit-Log: Suchfeld ergänzt, durchsucht Wer/Tabelle/Aktion/Details gleichzeitig - Treffer klappen ihre Jahr/Monat-Gruppe automatisch auf',
+        'Audit-Log: "Mehr laden"-Button statt starrem 200er-Limit, lädt bei Bedarf in 300er-Schritten weitere ältere Einträge nach',
+      ],
+      en: [
+        'Audit log: entries are now grouped by year and month (both collapsible, all collapsed by default)',
+        'Audit log: added a search field, searches who/table/action/details at once - matches automatically expand their year/month group',
+        'Audit log: "Load more" button instead of a fixed 200-entry limit, loads further older entries in batches of 300 on demand',
+      ],
+    },
+  },
   {
     version: '1.22.0',
     date: '2026-08-23',
