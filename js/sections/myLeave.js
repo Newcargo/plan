@@ -12,6 +12,56 @@ const STATUS_META = {
   storniert: { label: 'Storniert', cls: 'badge-muted' },
 };
 
+const APP_URL = 'https://newcargo.github.io/Plan-/';
+
+// Ermittelt alle Projekt Approver (An) und Admins (Cc, ohne Dopplungen) mit hinterlegter E-Mail,
+// baut daraus einen mailto-Link und oeffnet ihn. Gibt true zurueck, falls jemand gefunden wurde.
+async function notifyApprovers(supabase, t, employeeName, startDate, endDate, dayPortion, isReminder) {
+  const { data: roleRows, error } = await supabase
+    .from('user_roles')
+    .select('role, employees!user_roles_user_id_fkey(email)')
+    .in('role', ['stufe2_genehmiger', 'admin']);
+
+  if (error) return false;
+
+  const approverEmails = new Set();
+  const adminEmails = new Set();
+  (roleRows || []).forEach(r => {
+    const email = r.employees?.email;
+    if (!email) return;
+    if (r.role === 'stufe2_genehmiger') approverEmails.add(email);
+    if (r.role === 'admin') adminEmails.add(email);
+  });
+
+  let toEmails = [...approverEmails];
+  let ccEmails = [...adminEmails].filter(e => !approverEmails.has(e));
+  if (toEmails.length === 0 && ccEmails.length > 0) {
+    toEmails = ccEmails;
+    ccEmails = [];
+  }
+  if (toEmails.length === 0) return false;
+
+  const portionText = dayPortion !== 'ganztag' ? t('myLeave.dayPortion.' + dayPortion) : t('myLeave.dayPortion.ganztag');
+  const periodText = startDate === endDate ? formatDate(startDate) : `${formatDate(startDate)} – ${formatDate(endDate)}`;
+
+  const subjectKey = isReminder ? 'myLeave.mailReminderSubject' : 'myLeave.mailSubject';
+  const bodyKey = isReminder ? 'myLeave.mailReminderBody' : 'myLeave.mailBody';
+
+  const subject = t(subjectKey).replaceAll('{name}', employeeName);
+  const body = t(bodyKey)
+    .replaceAll('{name}', employeeName)
+    .replaceAll('{period}', periodText)
+    .replaceAll('{portion}', portionText)
+    .replaceAll('{link}', APP_URL);
+
+  const mailtoHref = `mailto:${toEmails.join(',')}?cc=${ccEmails.join(',')}&subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+
+  const a = document.createElement('a');
+  a.href = mailtoHref;
+  a.click();
+  return true;
+}
+
 export async function renderMyLeave(container, context) {
   const employee = context && context.employee;
   if (!employee) {
@@ -156,6 +206,7 @@ export async function renderMyLeave(container, context) {
     e.preventDefault();
     const msg = document.getElementById('leave-msg');
     msg.hidden = true;
+    msg.style.color = '';
 
     const start = startInput.value;
     const end = endInput.value;
@@ -197,6 +248,15 @@ export async function renderMyLeave(container, context) {
       return;
     }
 
+    const mailSent = await notifyApprovers(supabase, t, employee.full_name, start, end, portionSelect.value, false);
+    if (!mailSent) {
+      msg.style.color = 'var(--text-muted)';
+      msg.textContent = t('myLeave.noRecipientsHint');
+      msg.hidden = false;
+    } else {
+      msg.hidden = true;
+    }
+
     e.target.reset();
     startInput.value = todayISO();
     endInput.value = todayISO();
@@ -232,6 +292,7 @@ export async function renderMyLeave(container, context) {
 
       let actions = '';
       if (lr.status === 'beantragt') {
+        actions += `<button type="button" class="btn btn-secondary remind-btn">${t('myLeave.sendReminder')}</button>`;
         actions += iconButton(ICON_DELETE, t('myLeave.withdraw'), 'withdraw-btn');
       }
       if (lr.status === 'abgelehnt') {
@@ -266,6 +327,15 @@ export async function renderMyLeave(container, context) {
         </tr>
       `;
     }).join('');
+
+    tbody.querySelectorAll('.remind-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const row = btn.closest('tr');
+        const lr = leaveData.find(x => x.id === row.dataset.id);
+        const sent = await notifyApprovers(supabase, t, employee.full_name, lr.start_date, lr.end_date, lr.day_portion, true);
+        if (!sent) alert(t('myLeave.noRecipientsHint'));
+      });
+    });
 
     tbody.querySelectorAll('.delete-storniert-btn').forEach(btn => {
       btn.addEventListener('click', async () => {

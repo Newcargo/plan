@@ -6,9 +6,27 @@
 //
 // Bei jeder Aenderung: APP_VERSION anpassen UND einen neuen Eintrag oben in CHANGELOG ergaenzen.
 
-export const APP_VERSION = '1.23.0';
+export const APP_VERSION = '1.24.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.24.0',
+    date: '2026-08-23',
+    changes: {
+      de: [
+        'Beim Stellen eines Urlaubsantrags öffnet sich automatisch ein vorausgefüllter Mail-Entwurf (Outlook) an alle Projekt Approver (An) und Admins (Cc) mit hinterlegter E-Mail-Adresse',
+        'E-Mail enthält Name, Zeitraum, Ganztag/Halbtag-Angabe, Link zur App und eine kurze Anleitung, wo der Genehmiger in der App hin muss',
+        'Neuer "Erinnerung senden"-Button bei offenen Anträgen, falls der Genehmiger noch nicht reagiert hat',
+        'Falls niemand mit passender Rolle eine E-Mail hinterlegt hat, erscheint ein Hinweis statt eines Mail-Entwurfs',
+      ],
+      en: [
+        'Submitting a leave request automatically opens a pre-filled email draft (Outlook) to all project approvers (To) and admins (Cc) with an email on file',
+        'Email includes name, period, full-day/half-day info, a link to the app, and brief instructions on where the approver needs to go',
+        'New "Send reminder" button on open requests in case the approver has not responded yet',
+        'If nobody with the relevant role has an email on file, a hint is shown instead of a mail draft',
+      ],
+    },
+  },
   {
     version: '1.23.0',
     date: '2026-08-23',
