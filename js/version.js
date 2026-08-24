@@ -6,9 +6,21 @@
 //
 // Bei jeder Aenderung: APP_VERSION anpassen UND einen neuen Eintrag oben in CHANGELOG ergaenzen.
 
-export const APP_VERSION = '1.27.3';
+export const APP_VERSION = '1.27.4';
 
 export const CHANGELOG = [
+  {
+    version: '1.27.4',
+    date: '2026-08-23',
+    changes: {
+      de: [
+        'Fehlerbehebung (wichtig): PPM-Weiterleitungs-Mail bei genehmigten externen Anträgen öffnete sich weiterhin nicht - diesmal lag ein "await" (Datenbankabfrage) zwischen den beiden mailto-Aufrufen, was denselben Blockier-Effekt wie das frühere setTimeout hatte. Alle Abfragen laufen jetzt VOR dem ersten Mail-Aufruf, danach feuern beide Mails ohne Verzögerung dazwischen',
+      ],
+      en: [
+        'Bug fix (important): the PPM forwarding email for approved external requests still did not open - this time an "await" (database query) sat between the two mailto calls, causing the same blocking effect as the earlier setTimeout. All lookups now run BEFORE the first email call, after which both emails fire with no gap in between',
+      ],
+    },
+  },
   {
     version: '1.27.3',
     date: '2026-08-23',

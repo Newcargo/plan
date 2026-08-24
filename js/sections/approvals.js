@@ -40,6 +40,12 @@ async function sendDecisionMail(r, approverName, decision) {
   const isExternal = !!r.employees?.is_external;
 
   if (decision === 'approved') {
+    // WICHTIG: alle asynchronen Abfragen (z.B. PPM-E-Mails) muessen VOR dem ersten
+    // mailto-Aufruf abgeschlossen sein. Jede Wartezeit (auch ein einzelnes await)
+    // zwischen zwei mailto-Aufrufen kann den zweiten fuer den Browser wie eine nicht
+    // vom Nutzer ausgeloeste Aktion aussehen lassen - das wird dann lautlos blockiert.
+    const ppmEmails = isExternal ? await getPpmEmails() : [];
+
     const subject = t('approvals.mailApprovedSubject');
     const bodyKey = isExternal ? 'approvals.mailApprovedExternBody' : 'approvals.mailApprovedInternBody';
     const body = t(bodyKey)
@@ -51,20 +57,15 @@ async function sendDecisionMail(r, approverName, decision) {
       .replaceAll('{link}', APP_URL);
     const sentToEmployee = openMailto({ to: [employeeEmail], subject, body });
 
-    if (isExternal) {
-      const ppmEmails = await getPpmEmails();
-      if (ppmEmails.length) {
-        const ppmSubject = t('approvals.mailPpmForwardSubject');
-        const ppmBody = t('approvals.mailPpmForwardBody')
-          .replaceAll('{name}', employeeName)
-          .replaceAll('{approver}', approverName)
-          .replaceAll('{period}', periodText(r))
-          .replaceAll('{portion}', portionText(r))
-          .replaceAll('{link}', APP_URL);
-        // WICHTIG: synchron innerhalb desselben Klicks aufrufen, kein setTimeout -
-        // Browser blockieren mailto-Aufrufe ausserhalb des direkten Nutzer-Klick-Kontexts oft lautlos.
-        openMailto({ to: ppmEmails, subject: ppmSubject, body: ppmBody });
-      }
+    if (isExternal && ppmEmails.length) {
+      const ppmSubject = t('approvals.mailPpmForwardSubject');
+      const ppmBody = t('approvals.mailPpmForwardBody')
+        .replaceAll('{name}', employeeName)
+        .replaceAll('{approver}', approverName)
+        .replaceAll('{period}', periodText(r))
+        .replaceAll('{portion}', portionText(r))
+        .replaceAll('{link}', APP_URL);
+      openMailto({ to: ppmEmails, subject: ppmSubject, body: ppmBody });
     }
     return sentToEmployee;
   }
