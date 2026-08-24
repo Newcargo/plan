@@ -6,9 +6,25 @@
 //
 // Bei jeder Aenderung: APP_VERSION anpassen UND einen neuen Eintrag oben in CHANGELOG ergaenzen.
 
-export const APP_VERSION = '1.25.0';
+export const APP_VERSION = '1.25.1';
 
 export const CHANGELOG = [
+  {
+    version: '1.25.1',
+    date: '2026-08-23',
+    changes: {
+      de: [
+        'Fehlerbehebung: Beim Löschen eines Mitarbeiters blieb ein bestehender Login-Account bei Supabase Auth bestehen ("verwaist") und blockierte die spätere Neuvergabe derselben E-Mail-Adresse',
+        'Löschen eines Mitarbeiters entfernt jetzt automatisch auch einen eventuell vorhandenen Login-Account mit',
+        'Betroffenen Testfall (andrei.sicoe@gmail.com) direkt bereinigt',
+      ],
+      en: [
+        'Bug fix: deleting an employee left an existing Supabase Auth login account behind ("orphaned"), blocking that email from being reassigned later',
+        'Deleting an employee now also automatically removes any existing login account',
+        'Cleaned up the affected test case (andrei.sicoe@gmail.com) directly',
+      ],
+    },
+  },
   {
     version: '1.25.0',
     date: '2026-08-23',

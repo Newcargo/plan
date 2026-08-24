@@ -4,31 +4,7 @@ import { ICON_KEY, iconButton, fieldLabel } from '../icons.js';
 import { createSortState, sortableHeader, wireSortHeaders, sortArray } from '../sortable.js';
 import { ROLE_DEFINITIONS, ALL_ROLE_KEYS as ALL_ROLES, getIncludedLabels } from '../roleDefinitions.js';
 import { openFormModal } from '../modal.js';
-
-// Ruft die admin-users Edge Function auf und liest bei einem Fehler die echte Meldung
-// aus dem Response-Body ("error"-Feld), statt der generischen supabase-js-Meldung
-// ("Edge Function returned a non-2xx status code").
-async function invokeAdminUsers(body) {
-  const { data: { session } } = await supabase.auth.getSession();
-  const { data, error } = await supabase.functions.invoke('admin-users', {
-    body,
-    headers: { Authorization: `Bearer ${session.access_token}` },
-  });
-
-  if (error) {
-    let message = error.message;
-    try {
-      if (error.context && typeof error.context.json === 'function') {
-        const body = await error.context.json();
-        if (body && body.error) message = body.error;
-      }
-    } catch (_) { /* Fallback bleibt die generische Meldung */ }
-    return { data: null, error: message };
-  }
-
-  if (data && data.error) return { data, error: data.error };
-  return { data, error: null };
-}
+import { invokeAdminUsers } from '../adminUsers.js';
 
 export async function renderRoles(container) {
   const sortState = createSortState('full_name', true);

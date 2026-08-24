@@ -3,6 +3,7 @@ import { t } from '../i18n.js';
 import { ICON_EDIT, ICON_DELETE, iconButton, fieldLabel } from '../icons.js';
 import { createSortState, sortableHeader, wireSortHeaders, sortArray } from '../sortable.js';
 import { openFormModal, showConfirmModal } from '../modal.js';
+import { invokeAdminUsers } from '../adminUsers.js';
 
 export async function renderEmployees(container) {
   const sortState = createSortState('full_name', true);
@@ -202,10 +203,10 @@ export async function renderEmployees(container) {
       btn.addEventListener('click', async () => {
         if (!confirm(t('common.confirmDelete'))) return;
         const id = btn.closest('tr').dataset.id;
-        const { error } = await supabase.from('employees').delete().eq('id', id);
+        const { error } = await invokeAdminUsers({ action: 'delete_employee', employee_id: id });
         if (error) {
           // Fremdschluessel-Fehler (Urlaubshistorie vorhanden) -> Deaktivieren anbieten statt loeschen
-          const isFkError = error.message && error.message.toLowerCase().includes('foreign key');
+          const isFkError = error.toLowerCase().includes('foreign key');
           if (isFkError) {
             const wantsDeactivate = await showConfirmModal({
               title: t('employees.cannotDeleteTitle'),
@@ -220,7 +221,7 @@ export async function renderEmployees(container) {
             }
             return;
           }
-          alert(t('common.error') + '\n' + error.message);
+          alert(t('common.error') + '\n' + error);
           return;
         }
         loadEmployees();
