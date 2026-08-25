@@ -6,9 +6,25 @@
 //
 // Bei jeder Aenderung: APP_VERSION anpassen UND einen neuen Eintrag oben in CHANGELOG ergaenzen.
 
-export const APP_VERSION = '1.32.0';
+export const APP_VERSION = '1.33.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.33.0',
+    date: '2026-08-23',
+    changes: {
+      de: [
+        'Kapazitäts-Engine (Teil 4): "Story Points"-Pop-up zeigt jetzt pro Team einen empfohlenen Von-Bis-Bereich, basierend auf historischer Team-Velocity (Ø SP/PT der letzten Sprints), der berechneten Sprint-Kapazität und dem passenden Konfidenzband',
+        'Neue Datenbank-Funktion "get_team_velocity" berechnet die durchschnittliche Velocity der letzten N abgeschlossenen Sprints eines Teams',
+        'Hinweis statt erfundener Zahl, falls für ein Team noch keine ausreichende Historie vorliegt',
+      ],
+      en: [
+        'Capacity engine (part 4): the "Story Points" pop-up now shows a recommended range per team, based on historical team velocity (avg. SP/PT of recent sprints), the calculated sprint capacity, and the matching confidence band',
+        'New database function "get_team_velocity" calculates the average velocity of a team\'s last N completed sprints',
+        'Shows a hint instead of a made-up number if a team does not yet have enough history',
+      ],
+    },
+  },
   {
     version: '1.32.0',
     date: '2026-08-23',

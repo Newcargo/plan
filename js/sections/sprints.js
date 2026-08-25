@@ -252,12 +252,17 @@ export async function renderSprints(container) {
   }
 
   async function openVelocityModal(sprintId) {
-    const [{ data: teams }, { data: existing }, { data: caps }] = await Promise.all([
+    const sprint = sprintsData.find(s => s.id === sprintId);
+
+    const [{ data: teams }, { data: existing }, { data: caps }, { data: band }, { data: cfg }] = await Promise.all([
       supabase.from('teams').select('id, name').order('name'),
       supabase.from('sprint_velocity').select('team_id, planned_sp, completed_sp').eq('sprint_id', sprintId),
       supabase.from('capacity_snapshots').select('capacity_person_days, employees(team_id)').eq('sprint_id', sprintId),
+      supabase.from('confidence_bands').select('lower_pct, upper_pct').eq('sprint_position', sprint ? sprint.sprint_number : -1).maybeSingle(),
+      supabase.from('app_config').select('value').eq('key', 'velocity_rolling_window').maybeSingle(),
     ]);
 
+    const windowSize = (cfg && cfg.value) ? Number(cfg.value) : 3;
     const existingMap = new Map((existing || []).map(v => [v.team_id, v]));
     const capacityByTeam = new Map();
     (caps || []).forEach(c => {
@@ -271,16 +276,35 @@ export async function renderSprints(container) {
       return;
     }
 
+    // Pro Team die historische Velocity abfragen und daraus den Von-Bis-Bereich berechnen
+    const velocities = await Promise.all(teams.map(tm => supabase.rpc('get_team_velocity', { target_team_id: tm.id, window_size: windowSize })));
+    const rangeByTeam = new Map();
+    teams.forEach((tm, i) => {
+      const velocity = velocities[i].data;
+      const capacity = capacityByTeam.get(tm.id);
+      if (velocity == null || capacity == null || !band) { rangeByTeam.set(tm.id, null); return; }
+      const lower = Math.round(velocity * capacity * Number(band.lower_pct));
+      const upper = Math.round(velocity * capacity * Number(band.upper_pct));
+      rangeByTeam.set(tm.id, { lower, upper });
+    });
+
     const bodyHtml = `
-      <div class="form-grid" style="grid-template-columns: 1fr 110px 110px;">
+      <div class="form-grid" style="grid-template-columns: 1fr 100px 100px;">
         <div></div>
         <label style="text-align:center;">${t('sprints.plannedSp')}</label>
         <label style="text-align:center;">${t('sprints.completedSp')}</label>
         ${teams.map(tm => {
           const ex = existingMap.get(tm.id);
           const cap = capacityByTeam.get(tm.id);
+          const range = rangeByTeam.get(tm.id);
+          const rangeText = range
+            ? t('sprints.forecastRange').replace('{lower}', range.lower).replace('{upper}', range.upper)
+            : t('sprints.forecastUnavailable');
           return `
-            <label>${escapeHtml(tm.name)}${cap !== undefined ? ` <span style="color:var(--text-muted); font-size:0.75rem;">(${cap.toFixed(1)} PT)</span>` : ''}</label>
+            <label>
+              ${escapeHtml(tm.name)}${cap !== undefined ? ` <span style="color:var(--text-muted); font-size:0.75rem;">(${cap.toFixed(1)} PT)</span>` : ''}
+              <br><span style="color:var(--accent); font-size:0.75rem; font-weight:500;">${rangeText}</span>
+            </label>
             <input type="number" min="0" step="0.5" class="vel-planned" data-team="${tm.id}" value="${ex ? ex.planned_sp : ''}">
             <input type="number" min="0" step="0.5" class="vel-completed" data-team="${tm.id}" value="${ex ? ex.completed_sp : ''}">
           `;
