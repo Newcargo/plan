@@ -6,9 +6,23 @@
 //
 // Bei jeder Aenderung: APP_VERSION anpassen UND einen neuen Eintrag oben in CHANGELOG ergaenzen.
 
-export const APP_VERSION = '1.29.0';
+export const APP_VERSION = '1.30.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.30.0',
+    date: '2026-08-23',
+    changes: {
+      de: [
+        'Kapazitäts-Engine (Teil 1): Neue Datenbank-Funktion berechnet die Kapazität in Personentagen pro Sprint und Mitarbeiter - berücksichtigt Werktage, Feiertage, Beschäftigungsgrad, Reduktionsfaktor und erstmals auch final gebuchten Urlaub (Halbtage zählen 0.5)',
+        '"PI & Sprints": neue Kapazitäts-Spalte mit "Berechnen"-Button pro Sprint',
+      ],
+      en: [
+        'Capacity engine (part 1): new database function calculates capacity in person-days per sprint and employee - accounts for working days, holidays, employment percentage, reduction factor, and now also final-booked leave (half-days count as 0.5)',
+        '"PI & Sprints": new capacity column with a "Calculate" button per sprint',
+      ],
+    },
+  },
   {
     version: '1.29.0',
     date: '2026-08-23',

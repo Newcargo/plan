@@ -33,7 +33,7 @@ export async function renderSprints(container) {
       </div>
       <table>
         <thead><tr id="sprint-thead-row"></tr></thead>
-        <tbody id="sprint-tbody"><tr><td colspan="6" class="empty-state">${t('common.loading')}</td></tr></tbody>
+        <tbody id="sprint-tbody"><tr><td colspan="7" class="empty-state">${t('common.loading')}</td></tr></tbody>
       </table>
     </div>
   `;
@@ -47,7 +47,9 @@ export async function renderSprints(container) {
       ${sortableHeader(t('common.name'), 'name', sortState)}
       ${sortableHeader(t('sprints.start'), 'start_date', sortState)}
       ${sortableHeader(t('sprints.end'), 'end_date', sortState)}
-      <th>${t('sprints.closed')}</th><th></th>
+      <th>${t('sprints.closed')}</th>
+      <th class="num">${t('sprints.capacity')}</th>
+      <th></th>
     `;
     wireSortHeaders(row, sortState, () => { renderSprintRows(); wireHead(); });
   }
@@ -164,17 +166,26 @@ export async function renderSprints(container) {
 
   async function loadSprints() {
     const tbody = document.getElementById('sprint-tbody');
-    if (!piSelect.value) { sprintsData = []; tbody.innerHTML = `<tr><td colspan="6" class="empty-state">${t('common.none')}</td></tr>`; return; }
+    if (!piSelect.value) { sprintsData = []; tbody.innerHTML = `<tr><td colspan="7" class="empty-state">${t('common.none')}</td></tr>`; return; }
 
     const { data, error } = await supabase.from('sprints').select('*').eq('pi_id', piSelect.value);
-    if (error) { tbody.innerHTML = `<tr><td colspan="6" class="empty-state">${t('common.error')}</td></tr>`; return; }
+    if (error) { tbody.innerHTML = `<tr><td colspan="7" class="empty-state">${t('common.error')}</td></tr>`; return; }
     sprintsData = data || [];
+
+    const sprintIds = sprintsData.map(s => s.id);
+    if (sprintIds.length) {
+      const { data: caps } = await supabase.from('capacity_snapshots').select('sprint_id, capacity_person_days').in('sprint_id', sprintIds);
+      const totals = new Map();
+      (caps || []).forEach(c => totals.set(c.sprint_id, (totals.get(c.sprint_id) || 0) + Number(c.capacity_person_days)));
+      sprintsData.forEach(s => { s.capacityTotal = totals.has(s.id) ? totals.get(s.id) : null; });
+    }
+
     renderSprintRows();
   }
 
   function renderSprintRows() {
     const tbody = document.getElementById('sprint-tbody');
-    if (!sprintsData.length) { tbody.innerHTML = `<tr><td colspan="6" class="empty-state">${t('common.none')}</td></tr>`; return; }
+    if (!sprintsData.length) { tbody.innerHTML = `<tr><td colspan="7" class="empty-state">${t('common.none')}</td></tr>`; return; }
 
     sortArray(sprintsData, sortState);
 
@@ -185,12 +196,29 @@ export async function renderSprints(container) {
         <td class="mono">${formatDate(s.start_date)}</td>
         <td class="mono">${formatDate(s.end_date)}</td>
         <td><input type="checkbox" class="closed-toggle" ${s.is_closed ? 'checked' : ''}></td>
+        <td class="num">
+          ${s.capacityTotal !== null && s.capacityTotal !== undefined
+            ? `<span class="mono">${s.capacityTotal.toFixed(1)} PT</span>`
+            : `<span class="empty-state" style="padding:0;">${t('sprints.notCalculated')}</span>`}
+          <button type="button" class="btn btn-secondary calc-capacity-btn" style="margin-left:0.5rem;">${t('sprints.calculate')}</button>
+        </td>
         <td class="row-actions">
           ${iconButton(ICON_EDIT, t('common.edit'), 'edit-btn')}
           ${iconButton(ICON_DELETE, t('common.delete'), 'delete-btn')}
         </td>
       </tr>
     `).join('');
+
+    tbody.querySelectorAll('.calc-capacity-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = btn.closest('tr').dataset.id;
+        btn.disabled = true;
+        btn.textContent = t('common.loading');
+        const { error } = await supabase.rpc('calculate_capacity_snapshot', { target_sprint_id: id });
+        if (error) { alert(t('common.error') + '\n' + error.message); btn.disabled = false; btn.textContent = t('sprints.calculate'); return; }
+        loadSprints();
+      });
+    });
 
     tbody.querySelectorAll('.closed-toggle').forEach(cb => {
       cb.addEventListener('change', async () => {
