@@ -90,6 +90,9 @@ export async function renderMyLeave(container, context) {
   const { data: empDetail } = await supabase.from('employees').select('is_external').eq('id', employee.id).maybeSingle();
   isExternal = !!(empDetail && empDetail.is_external);
 
+  const { data: emailCfg } = await supabase.from('app_config').select('value').eq('key', 'email_notifications_enabled').maybeSingle();
+  const emailEnabled = emailCfg ? emailCfg.value !== false : true;
+
   container.innerHTML = `
     <header>
       <h1>${t('myLeave.title')}</h1>
@@ -272,13 +275,15 @@ export async function renderMyLeave(container, context) {
       return;
     }
 
-    const mailSent = await notifyApprovers(supabase, t, employee.full_name, start, end, portionSelect.value, false, isExternal, discussedWithTeam);
-    if (!mailSent) {
-      msg.style.color = 'var(--text-muted)';
-      msg.textContent = t('myLeave.noRecipientsHint');
-      msg.hidden = false;
-    } else {
-      msg.hidden = true;
+    if (emailEnabled) {
+      const mailSent = await notifyApprovers(supabase, t, employee.full_name, start, end, portionSelect.value, false, isExternal, discussedWithTeam);
+      if (!mailSent) {
+        msg.style.color = 'var(--text-muted)';
+        msg.textContent = t('myLeave.noRecipientsHint');
+        msg.hidden = false;
+      } else {
+        msg.hidden = true;
+      }
     }
 
     e.target.reset();
@@ -316,7 +321,9 @@ export async function renderMyLeave(container, context) {
 
       let actions = '';
       if (lr.status === 'beantragt') {
-        actions += `<button type="button" class="btn btn-secondary remind-btn">${t('myLeave.sendReminder')}</button>`;
+        if (emailEnabled) {
+          actions += `<button type="button" class="btn btn-secondary remind-btn">${t('myLeave.sendReminder')}</button>`;
+        }
         actions += iconButton(ICON_DELETE, t('myLeave.withdraw'), 'withdraw-btn');
       }
       if (lr.status === 'abgelehnt') {

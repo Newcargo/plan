@@ -6,9 +6,23 @@
 //
 // Bei jeder Aenderung: APP_VERSION anpassen UND einen neuen Eintrag oben in CHANGELOG ergaenzen.
 
-export const APP_VERSION = '1.28.0';
+export const APP_VERSION = '1.29.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.29.0',
+    date: '2026-08-23',
+    changes: {
+      de: [
+        'Neue Einstellung "E-Mail-Benachrichtigungen": schaltet alle automatischen Mails (Beantragen, Genehmigen, Ablehnen) sowie die zugehörigen Buttons ("Erinnerung senden", "Mail erneut senden") global ein oder aus',
+        'Standard: aktiviert, damit sich am bisherigen Verhalten nichts ändert, bis bewusst deaktiviert wird',
+      ],
+      en: [
+        'New "Email notifications" setting: globally turns all automatic emails (submission, approval, rejection) and their related buttons ("Send reminder", "Resend email") on or off',
+        'Default: enabled, so existing behavior stays unchanged until deliberately turned off',
+      ],
+    },
+  },
   {
     version: '1.28.0',
     date: '2026-08-23',

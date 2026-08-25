@@ -81,6 +81,9 @@ export async function renderApprovals(container, context) {
   const { data: cfg } = await supabase.from('app_config').select('value').eq('key', 'reminder_business_days').maybeSingle();
   if (cfg && cfg.value) reminderDays = Number(cfg.value);
 
+  const { data: emailCfg } = await supabase.from('app_config').select('value').eq('key', 'email_notifications_enabled').maybeSingle();
+  const emailEnabled = emailCfg ? emailCfg.value !== false : true;
+
   container.innerHTML = `
     <header><h1>${t('approvals.title')}</h1></header>
 
@@ -189,7 +192,7 @@ export async function renderApprovals(container, context) {
           approved_at: new Date().toISOString(),
         }).eq('id', id);
         if (error) { alert(t('common.error') + '\n' + error.message); return; }
-        await sendDecisionMail({ ...rowData, comment_stufe2: comment }, currentEmployeeName, 'approved');
+        if (emailEnabled) await sendDecisionMail({ ...rowData, comment_stufe2: comment }, currentEmployeeName, 'approved');
         loadAll();
       });
     });
@@ -209,7 +212,7 @@ export async function renderApprovals(container, context) {
           approved_by: currentEmployeeId,
         }).eq('id', id);
         if (error) { alert(t('common.error') + '\n' + error.message); return; }
-        await sendDecisionMail({ ...rowData, comment_stufe2: comment.trim() }, currentEmployeeName, 'rejected');
+        if (emailEnabled) await sendDecisionMail({ ...rowData, comment_stufe2: comment.trim() }, currentEmployeeName, 'rejected');
         loadAll();
       });
     });
@@ -222,7 +225,7 @@ export async function renderApprovals(container, context) {
     tbody.innerHTML = rows.map(r => {
       const meta = STATUS_META[r.status] || { label: r.status, cls: 'badge-muted' };
       const canStorno = isAdmin && ['beantragt', 'genehmigt_projekt', 'final_gebucht'].includes(r.status);
-      const canResend = canApprove && ['genehmigt_projekt', 'abgelehnt'].includes(r.status);
+      const canResend = emailEnabled && canApprove && ['genehmigt_projekt', 'abgelehnt'].includes(r.status);
       return `
         <tr data-id="${r.id}">
           <td>${escapeHtml(r.employees?.full_name || '–')}${r.employees?.is_external ? ` <span class="badge badge-muted">extern</span>` : ''} ${discussedBadge(r)}</td>

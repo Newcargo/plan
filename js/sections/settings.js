@@ -19,6 +19,9 @@ export async function renderSettings(container) {
 
         ${fieldLabel(t('settings.reminderDays'), 'Ab wie vielen Werktagen ein offener Antrag in der Genehmigungs-Ansicht als "wartet lange" hervorgehoben wird.')}
         <input type="number" id="f-reminder-days" min="1" step="1" class="narrow">
+
+        ${fieldLabel(t('settings.emailEnabled'), 'Schaltet alle automatischen E-Mail-Benachrichtigungen (Beantragen, Genehmigen, Ablehnen) und die dazugehörigen Buttons ("Erinnerung senden", "Mail erneut senden") komplett ein oder aus.')}
+        <input type="checkbox" id="f-email-enabled">
       </div>
       <div class="form-actions" style="justify-content:flex-start;align-items:center;">
         <button id="save-btn" class="btn btn-primary">${t('common.save')}</button>
@@ -50,12 +53,14 @@ export async function renderSettings(container) {
   document.getElementById('f-sprintcount').value = map.get('default_pi_sprint_count') ?? 5;
   document.getElementById('f-blocked-contact').value = map.get('blocked_contact_name') ?? 'Admin';
   document.getElementById('f-reminder-days').value = map.get('reminder_business_days') ?? 5;
+  document.getElementById('f-email-enabled').checked = map.get('email_notifications_enabled') ?? true;
 
   document.getElementById('save-btn').addEventListener('click', async () => {
     const windowVal = Number(document.getElementById('f-window').value);
     const sprintCountVal = Number(document.getElementById('f-sprintcount').value);
     const contactName = document.getElementById('f-blocked-contact').value.trim() || 'Admin';
     const reminderDays = Number(document.getElementById('f-reminder-days').value);
+    const emailEnabled = document.getElementById('f-email-enabled').checked;
 
     const { error: e1 } = await supabase.from('app_config').upsert(
       { key: 'velocity_rolling_window', value: windowVal }, { onConflict: 'key' }
@@ -69,9 +74,12 @@ export async function renderSettings(container) {
     const { error: e4 } = await supabase.from('app_config').upsert(
       { key: 'reminder_business_days', value: reminderDays }, { onConflict: 'key' }
     );
+    const { error: e5 } = await supabase.from('app_config').upsert(
+      { key: 'email_notifications_enabled', value: emailEnabled }, { onConflict: 'key' }
+    );
 
     const msg = document.getElementById('save-msg');
-    if (e1 || e2 || e3 || e4) {
+    if (e1 || e2 || e3 || e4 || e5) {
       msg.style.color = 'var(--danger)';
       msg.textContent = t('common.error');
     } else {
