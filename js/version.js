@@ -6,9 +6,35 @@
 //
 // Bei jeder Aenderung: APP_VERSION anpassen UND einen neuen Eintrag oben in CHANGELOG ergaenzen.
 
-export const APP_VERSION = '1.36.0';
+export const APP_VERSION = '2.0.0';
 
 export const CHANGELOG = [
+  {
+    version: '2.0.0',
+    date: '2026-08-25',
+    changes: {
+      de: [
+        'Icons vor allen Menüpunkten in der Seitenleiste',
+        'Eigener Name in der Seitenleiste jetzt heller/fetter hervorgehoben',
+        'Versionsnummer steht jetzt direkt unter dem Titel statt ganz unten',
+        'Neue Seite "Hilfe" mit rollenbasierter Kurzanleitung (jeder sieht nur, was zu seinen Rollen passt)',
+        'Übersicht komplett umgebaut: PI-Auswahl statt Sprint-Dropdown, darunter Sprint-Kacheln zum Anklicken, zusätzlich "Alle Sprints"-Ansicht als Team-×-Sprint-Tabelle',
+        'Teams: neues Flag "Story-Point-Planung" - deaktivierte Teams (z. B. Leadership) erscheinen nicht mehr in Übersicht und Story-Points-Erfassung, werden auch von der Kapazitätsberechnung ausgenommen',
+        'Neu: Krankheitstage - eigene Karte in "Mein Urlaub", läuft komplett ohne Genehmigung, sofort final erfasst, erscheint im Team-Kalender mit "K" in eigener Farbe, fliesst automatisch in die Kapazitätsberechnung ein',
+        'Datenbank-Regel geschärft: Urlaub muss weiterhin bei "Beantragt" starten, nur Krankheit darf direkt final erfasst werden (schliesst nebenbei eine bisher offene Lücke)',
+      ],
+      en: [
+        'Icons in front of every sidebar menu item',
+        'Own name in the sidebar now highlighted brighter/bolder',
+        'Version number now sits directly under the title instead of at the very bottom',
+        'New "Help" page with a role-based quick guide (everyone only sees what matches their roles)',
+        'Overview completely rebuilt: PI selector instead of a sprint dropdown, sprint tiles underneath to click through, plus an "All Sprints" view as a team × sprint table',
+        'Teams: new "Story point planning" flag - disabled teams (e.g. Leadership) no longer appear in the overview or story-points entry, and are excluded from capacity calculation too',
+        'New: sick leave - its own card in "My Leave", runs entirely without approval, entered as final immediately, appears in the team calendar as "K" in its own color, automatically factored into capacity calculation',
+        'Tightened database rule: leave must still start as "Submitted", only sick leave may be entered directly as final (closes a previously open gap along the way)',
+      ],
+    },
+  },
   {
     version: '1.36.0',
     date: '2026-08-23',

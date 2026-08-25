@@ -260,7 +260,7 @@ export async function renderSprints(container) {
     const sprint = sprintsData.find(s => s.id === sprintId);
 
     const [{ data: teams }, { data: existing }, { data: caps }, { data: band }, { data: cfg }] = await Promise.all([
-      supabase.from('teams').select('id, name').order('name'),
+      supabase.from('teams').select('id, name').eq('tracks_capacity', true).order('name'),
       supabase.from('sprint_velocity').select('team_id, planned_sp, completed_sp').eq('sprint_id', sprintId),
       supabase.from('capacity_snapshots').select('capacity_person_days, employees(team_id)').eq('sprint_id', sprintId),
       supabase.from('confidence_bands').select('lower_pct, upper_pct').eq('sprint_position', sprint ? sprint.sprint_number : -1).maybeSingle(),

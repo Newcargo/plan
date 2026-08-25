@@ -17,7 +17,7 @@ export async function renderTeams(container) {
       </div>
       <table>
         <thead><tr id="teams-thead-row"></tr></thead>
-        <tbody id="teams-tbody"><tr><td colspan="4" class="empty-state">${t('common.loading')}</td></tr></tbody>
+        <tbody id="teams-tbody"><tr><td colspan="5" class="empty-state">${t('common.loading')}</td></tr></tbody>
       </table>
     </div>
   `;
@@ -27,6 +27,7 @@ export async function renderTeams(container) {
       ${sortableHeader(t('teams.name'), 'name', sortState)}
       <th class="num">${t('teams.focus')}</th>
       <th class="num">${t('teams.buffer')}</th>
+      <th>${t('teams.tracksCapacity')}</th>
       <th></th>
     `;
     wireSortHeaders(document.getElementById('teams-thead-row'), sortState, () => { renderRows(); refreshHeader(); });
@@ -44,6 +45,9 @@ export async function renderTeams(container) {
 
         ${fieldLabel(t('teams.buffer'), 'Anteil der Kapazität, der für ungeplante Arbeit reserviert wird, z. B. Betrieb (0–1). Wird von der Kapazität abgezogen: effektiv = Fokusfaktor × (1 − Puffer).')}
         <input type="number" id="mf-buffer" min="0" max="1" step="0.01" required value="${team ? team.unplanned_buffer : '0'}">
+
+        ${fieldLabel(t('teams.tracksCapacity'), 'Deaktivieren für Teams, die keine Story Points umsetzen (z. B. Leadership) - erscheinen dann nicht in Übersicht und Story-Points-Erfassung.')}
+        <input type="checkbox" id="mf-tracks-capacity" ${!team || team.tracks_capacity ? 'checked' : ''}>
       </div>
     `;
   }
@@ -60,6 +64,7 @@ export async function renderTeams(container) {
         name: modal.body.querySelector('#mf-name').value.trim(),
         focus_factor: modal.body.querySelector('#mf-focus').value,
         unplanned_buffer: modal.body.querySelector('#mf-buffer').value,
+        tracks_capacity: modal.body.querySelector('#mf-tracks-capacity').checked,
       };
       const { error } = await supabase.from('teams').insert(payload);
       if (error) { alert(t('common.error') + '\n' + error.message); return; }
@@ -80,6 +85,7 @@ export async function renderTeams(container) {
         name: modal.body.querySelector('#mf-name').value.trim(),
         focus_factor: modal.body.querySelector('#mf-focus').value,
         unplanned_buffer: modal.body.querySelector('#mf-buffer').value,
+        tracks_capacity: modal.body.querySelector('#mf-tracks-capacity').checked,
       };
       const { error } = await supabase.from('teams').update(payload).eq('id', team.id);
       if (error) { alert(t('common.error') + '\n' + error.message); return; }
@@ -93,14 +99,14 @@ export async function renderTeams(container) {
   async function loadTeams() {
     const tbody = document.getElementById('teams-tbody');
     const { data, error } = await supabase.from('teams').select('*');
-    if (error) { tbody.innerHTML = `<tr><td colspan="4" class="empty-state">${t('common.error')}</td></tr>`; return; }
+    if (error) { tbody.innerHTML = `<tr><td colspan="5" class="empty-state">${t('common.error')}</td></tr>`; return; }
     teamsData = data || [];
     renderRows();
   }
 
   function renderRows() {
     const tbody = document.getElementById('teams-tbody');
-    if (!teamsData.length) { tbody.innerHTML = `<tr><td colspan="4" class="empty-state">${t('common.none')}</td></tr>`; return; }
+    if (!teamsData.length) { tbody.innerHTML = `<tr><td colspan="5" class="empty-state">${t('common.none')}</td></tr>`; return; }
 
     sortArray(teamsData, sortState);
 
@@ -109,6 +115,9 @@ export async function renderTeams(container) {
         <td>${escapeHtml(team.name)}</td>
         <td class="num mono">${Number(team.focus_factor).toFixed(2)}</td>
         <td class="num mono">${Number(team.unplanned_buffer).toFixed(2)}</td>
+        <td>${team.tracks_capacity
+          ? `<span class="badge badge-success">${t('common.yes')}</span>`
+          : `<span class="badge badge-muted">${t('common.no')}</span>`}</td>
         <td class="row-actions">
           ${iconButton(ICON_EDIT, t('common.edit'), 'edit-btn')}
           ${iconButton(ICON_DELETE, t('common.delete'), 'delete-btn')}

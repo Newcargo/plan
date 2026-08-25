@@ -6,6 +6,7 @@ const STATUS_COLORS = {
   beantragt: { bg: '#E0A400', text: '#000', code: 'BE' },
   genehmigt_projekt: { bg: '#2F6FED', text: '#fff', code: 'PL' },
   final_gebucht: { bg: '#1E9E6B', text: '#fff', code: 'FG' },
+  krankheit: { bg: '#5B3FA8', text: '#fff', code: 'K' },
 };
 
 const WEEKEND_BG = '#EDEFF2';
@@ -82,6 +83,7 @@ export async function renderTeamCalendar(container, context) {
         <span><span class="swatch" style="background:${STATUS_COLORS.beantragt.bg};"></span>BE = ${t('myLeave.status.beantragt')}</span>
         <span><span class="swatch" style="background:${STATUS_COLORS.genehmigt_projekt.bg};"></span>PL = ${t('myLeave.status.genehmigt_projekt')}</span>
         <span><span class="swatch" style="background:${STATUS_COLORS.final_gebucht.bg};"></span>FG = ${t('myLeave.status.final_gebucht')}</span>
+        <span><span class="swatch" style="background:${STATUS_COLORS.krankheit.bg};"></span>K = ${t('myLeave.sickBadge')}</span>
         <span><span class="swatch" style="background:#E6E0F8;"></span>${t('teamCal.legendHoliday')}</span>
         <span><span class="swatch" style="background:#FBE7EA;"></span>${t('teamCal.legendBlocked')}</span>
         <span><span class="swatch" style="background:${WEEKEND_BG}; border:1px solid var(--border);"></span>${t('teamCal.legendWeekend')}</span>
@@ -125,7 +127,7 @@ export async function renderTeamCalendar(container, context) {
     const [teamsRes, employeesRes, leaveRes, holidaysRes, blockedRes, sprintsRes, pisRes] = await Promise.all([
       supabase.from('teams').select('id, name').order('name'),
       supabase.from('employees').select('id, full_name, team_id').eq('active', true),
-      supabase.from('v_leave_calendar').select('employee_id, start_date, end_date, status, day_portion').lte('start_date', monthEndISO).gte('end_date', monthStartISO),
+      supabase.from('v_leave_calendar').select('employee_id, start_date, end_date, status, day_portion, absence_type').lte('start_date', monthEndISO).gte('end_date', monthStartISO),
       supabase.from('holidays').select('date, name, note').gte('date', monthStartISO).lte('date', monthEndISO),
       supabase.from('blocked_periods').select('start_date, end_date, label').lte('start_date', monthEndISO).gte('end_date', monthStartISO),
       supabase.from('sprints').select('id, pi_id, sprint_number, name, start_date, end_date').lte('start_date', monthEndISO).gte('end_date', monthStartISO),
@@ -220,7 +222,8 @@ export async function renderTeamCalendar(container, context) {
           <td class="cal-team-col">${escapeHtml(teamMap.get(emp.team_id) || '–')}</td>
           ${dayInfo.map(di => {
             const leave = leaveOnDay(emp.id, di.date);
-            const status = leave ? leave.status : null;
+            const isSick = leave && leave.absence_type === 'krankheit';
+            const statusKey = leave ? (isSick ? 'krankheit' : leave.status) : null;
             const portion = leave ? leave.day_portion : 'ganztag';
 
             // Basis-Hintergrund fuer den nicht durch Urlaub belegten Teil einer Zelle
@@ -231,9 +234,10 @@ export async function renderTeamCalendar(container, context) {
             else if (di.holiday) { contextBg = '#E6E0F8'; contextTitle = holidayText(di.holiday); }
             else if (di.isWeekend) { contextBg = WEEKEND_BG; }
 
-            if (status && STATUS_COLORS[status] && portion !== 'ganztag') {
-              const meta = STATUS_COLORS[status];
-              const statusTitle = `${t('myLeave.status.' + status)} (${t('myLeave.dayPortion.' + portion)})`;
+            if (statusKey && STATUS_COLORS[statusKey] && portion !== 'ganztag') {
+              const meta = STATUS_COLORS[statusKey];
+              const statusLabel = isSick ? t('myLeave.sickBadge') : t('myLeave.status.' + statusKey);
+              const statusTitle = `${statusLabel} (${t('myLeave.dayPortion.' + portion)})`;
               const topIsStatus = portion === 'vormittag';
               const topStyle = topIsStatus ? `background:${meta.bg};color:${meta.text};` : (contextBg ? `background:${contextBg};` : '');
               const bottomStyle = !topIsStatus ? `background:${meta.bg};color:${meta.text};` : (contextBg ? `background:${contextBg};` : '');
@@ -249,11 +253,11 @@ export async function renderTeamCalendar(container, context) {
             let textColor = '';
             let code = '';
             let title = '';
-            if (status && STATUS_COLORS[status]) {
-              bg = STATUS_COLORS[status].bg;
-              textColor = STATUS_COLORS[status].text;
-              code = STATUS_COLORS[status].code;
-              title = t('myLeave.status.' + status);
+            if (statusKey && STATUS_COLORS[statusKey]) {
+              bg = STATUS_COLORS[statusKey].bg;
+              textColor = STATUS_COLORS[statusKey].text;
+              code = STATUS_COLORS[statusKey].code;
+              title = isSick ? t('myLeave.sickBadge') : t('myLeave.status.' + statusKey);
             } else {
               bg = contextBg;
               title = contextTitle;

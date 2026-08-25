@@ -151,9 +151,9 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
 }
 #logout-btn { color: #F0729A; }
 #logout-btn:hover { background: rgba(240, 114, 154, 0.12); color: #F58FB0; }
-.sidebar-footer { margin-top: auto; display: flex; flex-direction: column; gap: 0.5rem; }
+.sidebar-version { color: var(--text-muted); font-size: 0.68rem; padding: 0 0.5rem; margin-bottom: 1rem; }
 .sidebar-user { padding: 0.5rem; margin-bottom: 1.5rem; }
-.sidebar-user .sidebar-user-name { color: #fff; font-weight: 600; font-size: 0.85rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sidebar-user .sidebar-user-name { color: var(--accent-soft); font-weight: 700; font-size: 0.9rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .sidebar-user .sidebar-user-role { color: var(--sidebar-text); font-size: 0.72rem; margin-top: 0.15rem; }
 
 /* Gemeinsame Ecke oben rechts: Glocke + Sprachumschaltung */
@@ -229,6 +229,7 @@ tr:last-child td { border-bottom: none; }
 .badge-success { background: var(--success-soft); color: var(--success); }
 .badge-warn { background: var(--warn-soft); color: var(--warn); }
 .badge-danger { background: var(--danger-soft); color: var(--danger); }
+.badge-sick { background: #E6E0F8; color: #5B3FA8; }
 .badge-info { background: var(--accent-soft); color: var(--accent); }
 .badge-muted { background: var(--bg); color: var(--text-muted); }
 
@@ -282,6 +283,15 @@ tr:last-child td { border-bottom: none; }
 .date-range-inline span { color: var(--text-muted); flex-shrink: 0; }
 
 .empty-state { color: var(--text-muted); font-size: 0.9rem; padding: 1rem 0; }
+
+.dash-tiles { display: flex; flex-wrap: wrap; gap: 0.6rem; }
+.dash-tile {
+  padding: 0.6rem 1rem; border-radius: var(--radius); border: 1px solid var(--border);
+  background: var(--surface); color: var(--text); font-family: var(--font-body); font-size: 0.85rem;
+  font-weight: 500; cursor: pointer;
+}
+.dash-tile:hover { background: var(--bg); }
+.dash-tile.active { background: var(--accent); color: #fff; border-color: var(--accent); }
 
 /* Jahres-Gruppen (Feiertage, Sperrzeiten) - auf-/zuklappbar */
 .year-group { border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 0.75rem; overflow: hidden; }
@@ -343,7 +353,6 @@ tr:last-child td { border-bottom: none; }
 .changelog-entry li { margin-bottom: 0.3rem; font-size: 0.9rem; }
 
 /* Versionsnummer in der Sidebar */
-.sidebar-version { color: var(--text-muted); font-size: 0.7rem; text-align: center; padding: 0.25rem 0; }
 
 /* Info-Icon mit Tooltip neben Feld-Labels */
 .field-label { display: inline-flex; align-items: center; gap: 0.4rem; }

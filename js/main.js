@@ -16,6 +16,7 @@ import { renderMyLeave } from './sections/myLeave.js';
 import { renderApprovals } from './sections/approvals.js';
 import { renderTeamCalendar } from './sections/teamCalendar.js';
 import { renderAuditLog } from './sections/auditLog.js';
+import { renderHelp } from './sections/help.js';
 import { APP_VERSION } from './version.js';
 import { ROLE_DEFINITIONS, ALL_ROLE_KEYS } from './roleDefinitions.js';
 import { openFormModal } from './modal.js';
@@ -36,6 +37,7 @@ const routes = {
   approvals: renderApprovals,
   'team-calendar': renderTeamCalendar,
   'audit-log': renderAuditLog,
+  help: renderHelp,
 };
 
 const loginScreen = document.getElementById('login-screen');

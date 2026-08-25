@@ -107,6 +107,9 @@ export async function renderMyLeave(container, context) {
             <span class="badge ${meta.cls}">${t('myLeave.status.' + key)}</span>
           </div>
         `).join('')}
+        <div style="display:flex; align-items:center; gap:0.4rem; font-size:0.85rem; color:var(--text-muted);">
+          <span class="badge badge-sick">${t('myLeave.sickBadge')}</span>
+        </div>
       </div>
     </div>
 
@@ -134,6 +137,32 @@ export async function renderMyLeave(container, context) {
         </div>
       </form>
       <p id="leave-msg" class="error-text" hidden></p>
+    </div>
+
+    <div class="card">
+      <div class="form-panel-title">${t('myLeave.sickTitle')}</div>
+      <p style="font-size:0.82rem; color:var(--text-muted); margin:-0.25rem 0 0.9rem;">${t('myLeave.sickHint')}</p>
+      <form id="sick-form">
+        <div class="form-grid">
+          ${fieldLabel(t('myLeave.start') + ' – ' + t('myLeave.end'), 'Erster und letzter Krankheitstag (inklusive).')}
+          <div class="date-range-inline">
+            <input type="date" id="f-sick-start" required value="${todayISO()}">
+            <span>–</span>
+            <input type="date" id="f-sick-end" required value="${todayISO()}">
+          </div>
+
+          <label>${t('myLeave.dayPortion')}</label>
+          <select id="f-sick-portion" style="max-width:220px;">
+            <option value="ganztag">${t('myLeave.dayPortion.ganztag')}</option>
+            <option value="vormittag">${t('myLeave.dayPortion.vormittag')}</option>
+            <option value="nachmittag">${t('myLeave.dayPortion.nachmittag')}</option>
+          </select>
+        </div>
+        <div class="form-actions" style="justify-content:flex-start;">
+          <button type="submit" class="btn btn-secondary">${t('myLeave.sickSubmit')}</button>
+        </div>
+      </form>
+      <p id="sick-msg" class="error-text" hidden></p>
     </div>
 
     <div class="card">
@@ -199,6 +228,80 @@ export async function renderMyLeave(container, context) {
 
   let startTouched = false;
   let endTouched = false;
+
+  // --- Krankheit melden: eigene, einfachere Von/Bis-Synchronisation ---
+  const sickStartInput = document.getElementById('f-sick-start');
+  const sickEndInput = document.getElementById('f-sick-end');
+  const sickPortionSelect = document.getElementById('f-sick-portion');
+  let sickStartTouched = false;
+  let sickEndTouched = false;
+
+  sickStartInput.addEventListener('change', () => {
+    sickStartTouched = true;
+    sickEndInput.min = sickStartInput.value;
+    if (!sickEndTouched || sickEndInput.value < sickStartInput.value) sickEndInput.value = sickStartInput.value;
+  });
+  sickEndInput.addEventListener('change', () => {
+    sickEndTouched = true;
+    if (!sickStartTouched || sickStartInput.value > sickEndInput.value) {
+      sickStartInput.value = sickEndInput.value;
+      sickEndInput.min = sickStartInput.value;
+    }
+  });
+
+  document.getElementById('sick-form').addEventListener('submit', async e => {
+    e.preventDefault();
+    const msg = document.getElementById('sick-msg');
+    msg.hidden = true;
+
+    const start = sickStartInput.value;
+    const end = sickEndInput.value;
+    if (start > end) {
+      msg.textContent = t('myLeave.dateOrderError');
+      msg.hidden = false;
+      return;
+    }
+
+    const { data: ownActive } = await supabase
+      .from('leave_requests')
+      .select('start_date, end_date')
+      .eq('employee_id', employee.id)
+      .not('status', 'in', '(abgelehnt,storniert)')
+      .lte('start_date', end)
+      .gte('end_date', start);
+
+    if (ownActive && ownActive.length) {
+      const conflict = ownActive[0];
+      msg.textContent = t('myLeave.overlapError')
+        .replace('{start}', formatDate(conflict.start_date))
+        .replace('{end}', formatDate(conflict.end_date));
+      msg.hidden = false;
+      return;
+    }
+
+    const { error } = await supabase.from('leave_requests').insert({
+      employee_id: employee.id,
+      start_date: start,
+      end_date: end,
+      day_portion: sickPortionSelect.value,
+      absence_type: 'krankheit',
+      status: 'final_gebucht',
+      is_external_process: isExternal,
+    });
+
+    if (error) {
+      msg.textContent = error.message;
+      msg.hidden = false;
+      return;
+    }
+
+    e.target.reset();
+    sickStartInput.value = todayISO();
+    sickEndInput.value = todayISO();
+    sickStartTouched = false;
+    sickEndTouched = false;
+    load();
+  });
 
   startInput.addEventListener('change', () => {
     startTouched = true;
@@ -301,7 +404,7 @@ export async function renderMyLeave(container, context) {
     const tbody = document.getElementById('leave-tbody');
     const { data, error } = await supabase
       .from('leave_requests')
-      .select('id, start_date, end_date, status, day_portion, comment_stufe2, is_external_process, discussed_with_team, approver:employees!leave_requests_approved_by_fkey(full_name)')
+      .select('id, start_date, end_date, status, day_portion, absence_type, comment_stufe2, is_external_process, discussed_with_team, approver:employees!leave_requests_approved_by_fkey(full_name)')
       .eq('employee_id', employee.id)
       .order('start_date', { ascending: false });
 
@@ -317,7 +420,8 @@ export async function renderMyLeave(container, context) {
     const currentTodayISO = todayISO();
 
     tbody.innerHTML = leaveData.map(lr => {
-      const meta = STATUS_META[lr.status] || { label: lr.status, cls: 'badge-muted' };
+      const isSick = lr.absence_type === 'krankheit';
+      const meta = isSick ? { label: t('myLeave.sickBadge'), cls: 'badge-sick' } : (STATUS_META[lr.status] || { label: lr.status, cls: 'badge-muted' });
 
       let actions = '';
       if (lr.status === 'beantragt') {
@@ -354,7 +458,7 @@ export async function renderMyLeave(container, context) {
       return `
         <tr data-id="${lr.id}" data-start="${lr.start_date}" data-end="${lr.end_date}" class="${isPastFinal ? 'row-past' : ''}">
           <td class="mono">${formatDate(lr.start_date)} – ${formatDate(lr.end_date)}${portionSuffix}</td>
-          <td><span class="badge ${meta.cls}">${t('myLeave.status.' + lr.status) || meta.label}</span></td>
+          <td><span class="badge ${meta.cls}">${isSick ? meta.label : (t('myLeave.status.' + lr.status) || meta.label)}</span></td>
           <td>${escapeHtml(lr.comment_stufe2 || '')}</td>
           <td>${escapeHtml(lr.approver?.full_name || '–')}</td>
           <td class="row-actions">${actions}</td>
@@ -419,14 +523,16 @@ export async function renderMyLeave(container, context) {
 
     tbody.querySelectorAll('.storno-btn').forEach(btn => {
       btn.addEventListener('click', async () => {
+        const id = btn.closest('tr').dataset.id;
+        const lr = leaveData.find(x => x.id === id);
+        const isSick = lr && lr.absence_type === 'krankheit';
         const ok = await showConfirmModal({
           title: t('myLeave.storno'),
-          message: t('myLeave.stornoConfirm'),
+          message: isSick ? t('myLeave.stornoConfirmSick') : t('myLeave.stornoConfirm'),
           confirmLabel: t('myLeave.storno'),
           cancelLabel: t('common.cancel'),
         });
         if (!ok) return;
-        const id = btn.closest('tr').dataset.id;
         const { error } = await supabase.from('leave_requests').update({ status: 'storniert' }).eq('id', id);
         if (error) { alert(t('common.error') + '\n' + error.message); return; }
         load();
