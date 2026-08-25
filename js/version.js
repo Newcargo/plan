@@ -6,9 +6,43 @@
 //
 // Bei jeder Aenderung: APP_VERSION anpassen UND einen neuen Eintrag oben in CHANGELOG ergaenzen.
 
-export const APP_VERSION = '1.30.0';
+export const APP_VERSION = '1.32.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.32.0',
+    date: '2026-08-23',
+    changes: {
+      de: [
+        'Kapazitäts-Engine (Teil 3): "PI & Sprints" hat jetzt einen "Story Points"-Button pro Sprint, öffnet ein Pop-up mit geplanten/erreichten SP pro Team',
+        'Kapazität pro Team (aus der zuletzt berechneten Sprint-Kapazität) wird dabei automatisch übernommen, kein manuelles Eintragen nötig',
+        'SP pro Personentag (Velocity) wird automatisch berechnet, sobald geplante/erreichte Werte gespeichert werden',
+      ],
+      en: [
+        'Capacity engine (part 3): "PI & Sprints" now has a "Story Points" button per sprint, opens a pop-up with planned/completed SP per team',
+        'Capacity per team (from the most recently calculated sprint capacity) is picked up automatically, no manual entry needed',
+        'SP per person-day (velocity) is calculated automatically once planned/completed values are saved',
+      ],
+    },
+  },
+  {
+    version: '1.31.0',
+    date: '2026-08-23',
+    changes: {
+      de: [
+        'Kapazitäts-Engine (Teil 2): "Übersicht" zeigt jetzt die echte, berechnete Kapazität pro Team für einen wählbaren Sprint (statt nur einem groben Durchschnittswert)',
+        'Sprint-Auswahl springt standardmässig auf den aktuell laufenden bzw. nächsten Sprint',
+        'Zeigt pro Team: Personenzahl, Kapazität in Personentagen, Abwesenheit durch Urlaub',
+        'Hinweis, falls für den gewählten Sprint noch keine Kapazität berechnet wurde',
+      ],
+      en: [
+        'Capacity engine (part 2): "Overview" now shows real, calculated capacity per team for a selectable sprint (instead of just a rough average)',
+        'Sprint selector defaults to the currently running or next upcoming sprint',
+        'Shows per team: headcount, capacity in person-days, absence due to leave',
+        'Hint shown if capacity has not been calculated yet for the selected sprint',
+      ],
+    },
+  },
   {
     version: '1.30.0',
     date: '2026-08-23',

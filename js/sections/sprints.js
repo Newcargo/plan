@@ -201,6 +201,7 @@ export async function renderSprints(container) {
             ? `<span class="mono">${s.capacityTotal.toFixed(1)} PT</span>`
             : `<span class="empty-state" style="padding:0;">${t('sprints.notCalculated')}</span>`}
           <button type="button" class="btn btn-secondary calc-capacity-btn" style="margin-left:0.5rem;">${t('sprints.calculate')}</button>
+          <button type="button" class="btn btn-secondary velocity-btn" style="margin-left:0.35rem;">${t('sprints.storyPoints')}</button>
         </td>
         <td class="row-actions">
           ${iconButton(ICON_EDIT, t('common.edit'), 'edit-btn')}
@@ -218,6 +219,10 @@ export async function renderSprints(container) {
         if (error) { alert(t('common.error') + '\n' + error.message); btn.disabled = false; btn.textContent = t('sprints.calculate'); return; }
         loadSprints();
       });
+    });
+
+    tbody.querySelectorAll('.velocity-btn').forEach(btn => {
+      btn.addEventListener('click', () => openVelocityModal(btn.closest('tr').dataset.id));
     });
 
     tbody.querySelectorAll('.closed-toggle').forEach(cb => {
@@ -243,6 +248,72 @@ export async function renderSprints(container) {
         if (error) { alert(t('common.error') + '\n' + error.message); return; }
         loadSprints();
       });
+    });
+  }
+
+  async function openVelocityModal(sprintId) {
+    const [{ data: teams }, { data: existing }, { data: caps }] = await Promise.all([
+      supabase.from('teams').select('id, name').order('name'),
+      supabase.from('sprint_velocity').select('team_id, planned_sp, completed_sp').eq('sprint_id', sprintId),
+      supabase.from('capacity_snapshots').select('capacity_person_days, employees(team_id)').eq('sprint_id', sprintId),
+    ]);
+
+    const existingMap = new Map((existing || []).map(v => [v.team_id, v]));
+    const capacityByTeam = new Map();
+    (caps || []).forEach(c => {
+      const tId = c.employees?.team_id;
+      if (!tId) return;
+      capacityByTeam.set(tId, (capacityByTeam.get(tId) || 0) + Number(c.capacity_person_days));
+    });
+
+    if (!teams || !teams.length) {
+      alert(t('common.none'));
+      return;
+    }
+
+    const bodyHtml = `
+      <div class="form-grid" style="grid-template-columns: 1fr 110px 110px;">
+        <div></div>
+        <label style="text-align:center;">${t('sprints.plannedSp')}</label>
+        <label style="text-align:center;">${t('sprints.completedSp')}</label>
+        ${teams.map(tm => {
+          const ex = existingMap.get(tm.id);
+          const cap = capacityByTeam.get(tm.id);
+          return `
+            <label>${escapeHtml(tm.name)}${cap !== undefined ? ` <span style="color:var(--text-muted); font-size:0.75rem;">(${cap.toFixed(1)} PT)</span>` : ''}</label>
+            <input type="number" min="0" step="0.5" class="vel-planned" data-team="${tm.id}" value="${ex ? ex.planned_sp : ''}">
+            <input type="number" min="0" step="0.5" class="vel-completed" data-team="${tm.id}" value="${ex ? ex.completed_sp : ''}">
+          `;
+        }).join('')}
+      </div>
+      <p style="font-size:0.78rem; color:var(--text-muted); margin-top:0.5rem;">${t('sprints.velocityHint')}</p>
+    `;
+
+    const modal = openFormModal({ title: t('sprints.storyPoints'), bodyHtml, submitLabel: t('common.save'), cancelLabel: t('common.cancel') });
+
+    modal.submitBtn.addEventListener('click', async () => {
+      const rows = teams
+        .map(tm => {
+          const plannedEl = modal.body.querySelector(`.vel-planned[data-team="${tm.id}"]`);
+          const completedEl = modal.body.querySelector(`.vel-completed[data-team="${tm.id}"]`);
+          const planned = plannedEl.value;
+          const completed = completedEl.value;
+          if (planned === '' && completed === '') return null;
+          return {
+            sprint_id: sprintId,
+            team_id: tm.id,
+            planned_sp: planned === '' ? 0 : Number(planned),
+            completed_sp: completed === '' ? 0 : Number(completed),
+            team_capacity_person_days: capacityByTeam.get(tm.id) || 0,
+          };
+        })
+        .filter(Boolean);
+
+      if (!rows.length) { modal.close(); return; }
+
+      const { error } = await supabase.from('sprint_velocity').upsert(rows, { onConflict: 'sprint_id,team_id' });
+      if (error) { alert(t('common.error') + '\n' + error.message); return; }
+      modal.close();
     });
   }
 
