@@ -55,13 +55,16 @@ export async function renderDashboard(container) {
   async function loadCapacity() {
     cardsEl.innerHTML = `<p class="empty-state">${t('common.loading')}</p>`;
     const sprintId = sprintSelect.value;
+    const sprint = sprints.find(s => s.id === sprintId);
 
-    const [{ data: teams }, { data: snapshots, error: snapErr }] = await Promise.all([
+    const [{ data: teams }, { data: snapshots, error: snapErr }, { data: band }, { data: cfg }] = await Promise.all([
       supabase.from('teams').select('id, name').order('name'),
       supabase
         .from('capacity_snapshots')
         .select('capacity_person_days, working_days, absence_days, employees(team_id)')
         .eq('sprint_id', sprintId),
+      supabase.from('confidence_bands').select('lower_pct, upper_pct').eq('sprint_position', sprint ? sprint.sprint_number : -1).maybeSingle(),
+      supabase.from('app_config').select('value').eq('key', 'velocity_rolling_window').maybeSingle(),
     ]);
 
     if (snapErr) { cardsEl.innerHTML = `<p class="empty-state">${t('common.error')}</p>`; return; }
@@ -70,6 +73,8 @@ export async function renderDashboard(container) {
       cardsEl.innerHTML = `<p class="empty-state">${t('dashboard.notCalculatedHint')}</p>`;
       return;
     }
+
+    const windowSize = (cfg && cfg.value) ? Number(cfg.value) : 3;
 
     const byTeam = new Map();
     snapshots.forEach(s => {
@@ -84,10 +89,24 @@ export async function renderDashboard(container) {
 
     const teamMap = new Map((teams || []).map(tm => [tm.id, tm.name]));
 
+    // Pro Team im Sprint vorkommendes Team die historische Velocity abfragen, fuer die Prognose
+    const teamIds = [...byTeam.keys()].filter(id => id !== 'none');
+    const velocities = await Promise.all(teamIds.map(id => supabase.rpc('get_team_velocity', { target_team_id: id, window_size: windowSize })));
+    const velocityByTeam = new Map();
+    teamIds.forEach((id, i) => velocityByTeam.set(id, velocities[i].data));
+
     cardsEl.innerHTML = [...byTeam.entries()].map(([teamId, agg]) => {
       const teamName = teamMap.get(teamId) || t('dashboard.noTeam');
       const maxPossible = agg.working * agg.count;
       const pct = maxPossible > 0 ? Math.round((agg.capacity / maxPossible) * 100) : 0;
+
+      const velocity = velocityByTeam.get(teamId);
+      let forecastHtml = `<div class="meta" style="color:var(--text-muted);">${t('dashboard.forecastUnavailable')}</div>`;
+      if (velocity != null && band) {
+        const lower = Math.round(velocity * agg.capacity * Number(band.lower_pct));
+        const upper = Math.round(velocity * agg.capacity * Number(band.upper_pct));
+        forecastHtml = `<div class="meta" style="color:var(--accent); font-weight:600;">${t('dashboard.forecast')}: ${lower}\u2013${upper} SP</div>`;
+      }
 
       return `
         <div class="team-card">
@@ -97,6 +116,7 @@ export async function renderDashboard(container) {
             <div class="value">${agg.capacity.toFixed(1)} PT</div>
           </div>
           <div class="meta">${agg.count} ${t('dashboard.people')} \u00b7 ${t('dashboard.absenceDays')}: ${agg.absence.toFixed(1)} PT</div>
+          ${forecastHtml}
         </div>
       `;
     }).join('');

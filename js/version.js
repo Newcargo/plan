@@ -6,9 +6,53 @@
 //
 // Bei jeder Aenderung: APP_VERSION anpassen UND einen neuen Eintrag oben in CHANGELOG ergaenzen.
 
-export const APP_VERSION = '1.33.0';
+export const APP_VERSION = '1.36.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.36.0',
+    date: '2026-08-23',
+    changes: {
+      de: [
+        'Sicherheit: Rollen-Vergabe/-Entzug sowie Sperren/Entsperren, Aktivieren/Deaktivieren und Löschen von Mitarbeitern werden jetzt im Audit-Log protokolliert (bisher nur Urlaubsanträge)',
+        'Sicherheit: Der letzte aktive Admin kann nicht mehr entfernt, gesperrt oder deaktiviert werden - auf Datenbank-Ebene erzwungen, nicht nur im Frontend versteckt',
+        'Rollen & Zugriff: eigene Admin-Rolle und eigenes "Gesperrt"-Häkchen sind für die eigene Zeile jetzt ausgegraut, mit erklärendem Hinweis',
+      ],
+      en: [
+        'Security: role grants/revokes as well as blocking/unblocking, activating/deactivating, and deleting employees are now recorded in the audit log (previously only leave requests)',
+        'Security: the last active admin can no longer be removed, blocked, or deactivated - enforced at the database level, not just hidden in the UI',
+        'Roles & Access: your own admin role and your own "Blocked" checkbox are now greyed out on your own row, with an explanatory tooltip',
+      ],
+    },
+  },
+  {
+    version: '1.35.0',
+    date: '2026-08-23',
+    changes: {
+      de: [
+        'PI & Sprints: Abschliessen-Häkchen berechnet die Kapazität jetzt automatisch neu (in beide Richtungen, jederzeit reversibel - keine echte Sperre, nur eine Auffrischung der Zahlen)',
+        'Seitenleiste: die bisher neun flachen Punkte unter "Verwaltung" sind jetzt in drei kleinere Gruppen aufgeteilt - Stammdaten, Kapazität & Sprints, System',
+      ],
+      en: [
+        'PI & Sprints: the "Closed" checkbox now automatically recalculates capacity (in either direction, always reversible - not a real lock, just a refresh of the numbers)',
+        'Sidebar: the previous nine flat items under "Administration" are now split into three smaller groups - Master Data, Capacity & Sprints, System',
+      ],
+    },
+  },
+  {
+    version: '1.34.0',
+    date: '2026-08-23',
+    changes: {
+      de: [
+        'Kapazitäts-Engine (Teil 5, letzter Baustein): "Übersicht" zeigt jetzt pro Team zusätzlich zur Kapazität auch die SP-Prognose (Von-Bis) für den gewählten Sprint direkt auf einen Blick, ohne extra Klicks',
+        'Damit ist die ursprünglich geplante Kapazitäts-/Story-Points-Funktionalität komplett: Kapazität berechnen → Story Points erfassen → Prognose anzeigen',
+      ],
+      en: [
+        'Capacity engine (part 5, final piece): "Overview" now also shows the SP forecast (range) per team for the selected sprint directly at a glance, no extra clicks needed',
+        'This completes the originally planned capacity/story points functionality: calculate capacity → record story points → show forecast',
+      ],
+    },
+  },
   {
     version: '1.33.0',
     date: '2026-08-23',

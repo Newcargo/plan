@@ -6,7 +6,8 @@ import { ROLE_DEFINITIONS, ALL_ROLE_KEYS as ALL_ROLES, getIncludedLabels } from 
 import { openFormModal } from '../modal.js';
 import { invokeAdminUsers } from '../adminUsers.js';
 
-export async function renderRoles(container) {
+export async function renderRoles(container, context) {
+  const currentEmployeeId = context && context.employee && context.employee.id;
   const sortState = createSortState('full_name', true);
   let rolesData = [];
   let roleMapGlobal = new Map();
@@ -169,16 +170,19 @@ export async function renderRoles(container) {
             </div>
           ` : ''}
           <div class="role-detail-checks">
-            ${ALL_ROLES.map(r => `
-              <label title="${escapeHtml(ROLE_DEFINITIONS[r].description)}">
-                <input type="checkbox" class="role-checkbox" data-role="${r}" ${roles.has(r) ? 'checked' : ''}>
+            ${ALL_ROLES.map(r => {
+              const isOwnAdmin = r === 'admin' && emp.id === currentEmployeeId;
+              return `
+              <label title="${isOwnAdmin ? escapeHtml(t('roles.cannotChangeOwnAdmin')) : escapeHtml(ROLE_DEFINITIONS[r].description)}">
+                <input type="checkbox" class="role-checkbox" data-role="${r}" ${roles.has(r) ? 'checked' : ''} ${isOwnAdmin ? 'disabled' : ''}>
                 ${t('roles.' + r)}
               </label>
-            `).join('')}
+            `;
+            }).join('')}
           </div>
           <div class="role-detail-footer">
-            <label title="${escapeHtml(t('roles.blockedHint'))}">
-              <input type="checkbox" class="blocked-checkbox" ${emp.is_blocked ? 'checked' : ''} ${!emp.auth_user_id ? 'disabled' : ''}>
+            <label title="${emp.id === currentEmployeeId ? escapeHtml(t('roles.cannotBlockSelf')) : escapeHtml(t('roles.blockedHint'))}">
+              <input type="checkbox" class="blocked-checkbox" ${emp.is_blocked ? 'checked' : ''} ${(!emp.auth_user_id || emp.id === currentEmployeeId) ? 'disabled' : ''}>
               ${t('roles.blocked')}
             </label>
             ${emp.auth_user_id ? `<button type="button" class="btn btn-secondary reset-pw-btn">${t('roles.resetPassword')}</button>` : ''}

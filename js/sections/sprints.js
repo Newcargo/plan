@@ -229,7 +229,12 @@ export async function renderSprints(container) {
       cb.addEventListener('change', async () => {
         const id = cb.closest('tr').dataset.id;
         const { error } = await supabase.from('sprints').update({ is_closed: cb.checked }).eq('id', id);
-        if (error) { alert(t('common.error') + '\n' + error.message); cb.checked = !cb.checked; }
+        if (error) { alert(t('common.error') + '\n' + error.message); cb.checked = !cb.checked; return; }
+        // Beim Abschliessen (oder Wieder-Oeffnen) die Kapazitaet automatisch neu berechnen,
+        // damit das is_final-Flag in capacity_snapshots dem aktuellen Stand entspricht.
+        // Bleibt jederzeit reversibel - kein technisches Sperren, nur eine Neuberechnung.
+        await supabase.rpc('calculate_capacity_snapshot', { target_sprint_id: id });
+        loadSprints();
       });
     });
 
