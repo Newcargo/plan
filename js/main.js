@@ -46,6 +46,7 @@ const appShell = document.getElementById('app-shell');
 const mainContent = document.getElementById('main-content');
 
 let currentRoles = new Set();
+let currentPermissions = {};
 let currentEmployee = null;
 
 async function refreshApprovalsBadge() {
@@ -80,26 +81,54 @@ function setActiveNav(route) {
 async function navigate(route) {
   setActiveNav(route);
   const renderFn = routes[route] || routes['my-leave'];
-  await renderFn(mainContent, { employee: currentEmployee, roles: currentRoles });
+  await renderFn(mainContent, { employee: currentEmployee, roles: currentRoles, permissions: currentPermissions });
   refreshApprovalsBadge();
+}
+
+const CONFIGURABLE_AREAS = ['genehmigt', 'teams', 'employees', 'holidays', 'blocked', 'dashboard', 'sprints', 'bands'];
+
+// Admin hat immer und ueberall Zugriff, unabhaengig vom Tabelleninhalt - Sicherheitsnetz,
+// analog zur Datenbank-Funktion has_permission().
+async function loadPermissions(roles) {
+  const merged = {};
+  CONFIGURABLE_AREAS.forEach(area => { merged[area] = { view: roles.has('admin'), edit: roles.has('admin') }; });
+  if (roles.has('admin')) return merged;
+
+  const { data } = await supabase.from('role_permissions').select('role, area, can_view, can_edit').in('role', [...roles]);
+  (data || []).forEach(row => {
+    if (row.can_view) merged[row.area].view = true;
+    if (row.can_edit) merged[row.area].edit = true;
+  });
+  return merged;
 }
 
 function applyRoleVisibility() {
   document.querySelectorAll('.nav-item[data-route]').forEach(btn => {
     const requires = btn.dataset.requires;
-    const requiresAny = btn.dataset.requiresAny;
+    const area = btn.dataset.area;
 
-    if (requires) {
+    if (area) {
+      btn.hidden = !(currentPermissions[area] && currentPermissions[area].view);
+    } else if (requires) {
       btn.hidden = !currentRoles.has(requires);
-    } else if (requiresAny) {
-      const options = requiresAny.split(',');
-      btn.hidden = !options.some(r => currentRoles.has(r));
     } else {
       btn.hidden = false;
     }
   });
-  document.querySelectorAll('.nav-group-label[data-requires]').forEach(el => {
-    el.hidden = !currentRoles.has(el.dataset.requires);
+  // Gruppen-Label zeigen, sobald mindestens ein Menuepunkt in dieser Gruppe sichtbar ist
+  // (bei fest codierten Labels wie "System" bleibt es wie bisher an eine feste Rolle gekoppelt).
+  document.querySelectorAll('.nav-group-label').forEach(label => {
+    if (label.dataset.requires) {
+      label.hidden = !currentRoles.has(label.dataset.requires);
+      return;
+    }
+    let anyVisible = false;
+    let sibling = label.nextElementSibling;
+    while (sibling && !sibling.classList.contains('nav-group-label')) {
+      if (sibling.classList.contains('nav-item') && !sibling.hidden) anyVisible = true;
+      sibling = sibling.nextElementSibling;
+    }
+    label.hidden = !anyVisible;
   });
 }
 
@@ -252,6 +281,7 @@ async function handleAccessResult() {
   if (result.status === 'ok') {
     currentEmployee = result.employee;
     currentRoles = result.roles;
+    currentPermissions = await loadPermissions(currentRoles);
 
     if (currentEmployee.must_change_password) {
       showForcePassword();

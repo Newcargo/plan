@@ -4,7 +4,8 @@ import { ICON_EDIT, ICON_DELETE, iconButton, fieldLabel } from '../icons.js';
 import { formatDate, todayISO } from '../dateFormat.js';
 import { openFormModal } from '../modal.js';
 
-export async function renderHolidays(container) {
+export async function renderHolidays(container, context) {
+  const canEdit = !!(context && context.permissions && context.permissions.holidays && context.permissions.holidays.edit);
   let holidaysData = [];
   const expandedYears = new Set([String(new Date().getFullYear())]);
 
@@ -13,7 +14,7 @@ export async function renderHolidays(container) {
     <div class="card">
       <div class="toolbar">
         <div></div>
-        <button type="button" class="btn btn-primary" id="open-add-btn">${t('common.add')}</button>
+        ${canEdit ? `<button type="button" class="btn btn-primary" id="open-add-btn">${t('common.add')}</button>` : ''}
       </div>
       <div id="hol-groups"><p class="empty-state">${t('common.loading')}</p></div>
     </div>
@@ -65,7 +66,7 @@ export async function renderHolidays(container) {
     });
   }
 
-  document.getElementById('open-add-btn').addEventListener('click', openAdd);
+  if (canEdit) document.getElementById('open-add-btn').addEventListener('click', openAdd);
 
   async function load() {
     const container = document.getElementById('hol-groups');
@@ -108,8 +109,8 @@ export async function renderHolidays(container) {
                     <td>${escapeHtml(h.name)}</td>
                     <td>${escapeHtml(h.note || '')}</td>
                     <td class="row-actions">
-                      ${iconButton(ICON_EDIT, t('common.edit'), 'edit-btn')}
-                      ${iconButton(ICON_DELETE, t('common.delete'), 'delete-btn')}
+                      ${canEdit ? iconButton(ICON_EDIT, t('common.edit'), 'edit-btn') : ''}
+                      ${canEdit ? iconButton(ICON_DELETE, t('common.delete'), 'delete-btn') : ''}
                     </td>
                   </tr>
                 `).join('')}

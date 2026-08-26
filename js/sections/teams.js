@@ -4,7 +4,8 @@ import { ICON_EDIT, ICON_DELETE, iconButton, fieldLabel } from '../icons.js';
 import { createSortState, sortableHeader, wireSortHeaders, sortArray } from '../sortable.js';
 import { openFormModal } from '../modal.js';
 
-export async function renderTeams(container) {
+export async function renderTeams(container, context) {
+  const canEdit = !!(context && context.permissions && context.permissions.teams && context.permissions.teams.edit);
   const sortState = createSortState('name', true);
   let teamsData = [];
 
@@ -13,7 +14,7 @@ export async function renderTeams(container) {
     <div class="card">
       <div class="toolbar">
         <div></div>
-        <button type="button" class="btn btn-primary" id="open-add-btn">${t('common.add')}</button>
+        ${canEdit ? `<button type="button" class="btn btn-primary" id="open-add-btn">${t('common.add')}</button>` : ''}
       </div>
       <table>
         <thead><tr id="teams-thead-row"></tr></thead>
@@ -94,7 +95,7 @@ export async function renderTeams(container) {
     });
   }
 
-  document.getElementById('open-add-btn').addEventListener('click', openAdd);
+  if (canEdit) document.getElementById('open-add-btn').addEventListener('click', openAdd);
 
   async function loadTeams() {
     const tbody = document.getElementById('teams-tbody');
@@ -119,8 +120,8 @@ export async function renderTeams(container) {
           ? `<span class="badge badge-success">${t('common.yes')}</span>`
           : `<span class="badge badge-muted">${t('common.no')}</span>`}</td>
         <td class="row-actions">
-          ${iconButton(ICON_EDIT, t('common.edit'), 'edit-btn')}
-          ${iconButton(ICON_DELETE, t('common.delete'), 'delete-btn')}
+          ${canEdit ? iconButton(ICON_EDIT, t('common.edit'), 'edit-btn') : ''}
+          ${canEdit ? iconButton(ICON_DELETE, t('common.delete'), 'delete-btn') : ''}
         </td>
       </tr>
     `).join('');

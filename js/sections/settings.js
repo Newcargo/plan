@@ -1,6 +1,6 @@
 import { supabase } from '../supabaseClient.js';
 import { t } from '../i18n.js';
-import { fieldLabel, ICON_EDIT, ICON_DELETE, iconButton } from '../icons.js';
+import { fieldLabel } from '../icons.js';
 
 export async function renderSettings(container) {
   container.innerHTML = `
@@ -30,58 +30,31 @@ export async function renderSettings(container) {
     </div>
 
     <div class="card">
-      <div class="form-panel-title">${t('settings.jobDescriptions')}</div>
-      <form id="jd-form">
-        <div class="form-grid">
-          ${fieldLabel(t('settings.jobDescriptionName'), 'Wird bei Mitarbeitern als Auswahl-Dropdown angeboten.')}
-          <input type="text" id="f-jd-name" required placeholder="z. B. Software-Entwickler">
-        </div>
-        <div class="form-actions" style="justify-content:flex-start;">
-          <button type="submit" class="btn btn-primary">${t('common.add')}</button>
-        </div>
-      </form>
-      <table>
-        <thead><tr><th>${t('common.name')}</th><th></th></tr></thead>
-        <tbody id="jd-tbody"><tr><td colspan="2" class="empty-state">${t('common.loading')}</td></tr></tbody>
-      </table>
-    </div>
-
-    <div class="card">
       <div class="form-panel-title">${t('settings.matrixTitle')}</div>
       <p style="font-size:0.82rem; color:var(--text-muted); margin:-0.25rem 0 0.9rem;">${t('settings.matrixHint')}</p>
       <table>
-        <thead><tr>
-          <th>${t('settings.matrixArea')}</th>
-          <th class="num">${t('roles.mitarbeiter')}</th>
-          <th class="num">${t('roles.stufe2_genehmiger')}</th>
-          <th class="num">${t('roles.people_pool_manager')}</th>
-          <th class="num">${t('roles.admin')}</th>
-        </tr></thead>
-        <tbody>
-          ${matrixRow(t('nav.myLeave'), t('settings.mxOwnEdit'), t('settings.mxOwnEdit'), t('settings.mxOwnEdit'), t('settings.mxOwnEditPlus'))}
-          ${matrixRow(t('nav.teamCalendar'), t('settings.mxView'), t('settings.mxViewApprove'), t('settings.mxView'), t('settings.mxViewApprove'))}
-          ${matrixRow(t('nav.approvals'), t('settings.mxNone'), t('settings.mxViewEdit'), t('settings.mxViewOnly'), t('settings.mxViewEdit'))}
-          ${matrixRow(t('nav.teams'), t('settings.mxNone'), t('settings.mxNone'), t('settings.mxNone'), t('settings.mxViewEdit'))}
-          ${matrixRow(t('nav.employees'), t('settings.mxNone'), t('settings.mxNone'), t('settings.mxNone'), t('settings.mxViewEdit'))}
-          ${matrixRow(t('nav.holidays'), t('settings.mxNone'), t('settings.mxNone'), t('settings.mxNone'), t('settings.mxViewEdit'))}
-          ${matrixRow(t('nav.blocked'), t('settings.mxNone'), t('settings.mxNone'), t('settings.mxNone'), t('settings.mxViewEdit'))}
-          ${matrixRow(t('nav.dashboard'), t('settings.mxNone'), t('settings.mxNone'), t('settings.mxNone'), t('settings.mxViewOnly'))}
-          ${matrixRow(t('nav.sprints'), t('settings.mxNone'), t('settings.mxNone'), t('settings.mxNone'), t('settings.mxViewEdit'))}
-          ${matrixRow(t('nav.bands'), t('settings.mxNone'), t('settings.mxNone'), t('settings.mxNone'), t('settings.mxViewEdit'))}
-          ${matrixRow(t('nav.settings'), t('settings.mxNone'), t('settings.mxNone'), t('settings.mxNone'), t('settings.mxViewEdit'))}
-          ${matrixRow(t('nav.roles'), t('settings.mxNone'), t('settings.mxNone'), t('settings.mxNone'), t('settings.mxViewEdit'))}
-          ${matrixRow(t('nav.auditLog'), t('settings.mxNone'), t('settings.mxNone'), t('settings.mxNone'), t('settings.mxViewOnly'))}
-          ${matrixRow(t('account.title'), t('settings.mxOwnEdit'), t('settings.mxOwnEdit'), t('settings.mxOwnEdit'), t('settings.mxOwnEdit'))}
-          ${matrixRow(t('nav.help'), t('settings.mxViewOnly'), t('settings.mxViewOnly'), t('settings.mxViewOnly'), t('settings.mxViewOnly'))}
-          ${matrixRow(t('nav.changelog'), t('settings.mxViewOnly'), t('settings.mxViewOnly'), t('settings.mxViewOnly'), t('settings.mxViewOnly'))}
-        </tbody>
+        <thead>
+          <tr>
+            <th rowspan="2">${t('settings.matrixArea')}</th>
+            <th colspan="2" class="num">${t('roles.mitarbeiter')}</th>
+            <th colspan="2" class="num">${t('roles.stufe2_genehmiger')}</th>
+            <th colspan="2" class="num">${t('roles.people_pool_manager')}</th>
+            <th class="num" rowspan="2">${t('roles.admin')}</th>
+          </tr>
+          <tr>
+            <th class="num">${t('settings.mxView')}</th><th class="num">${t('settings.mxEdit')}</th>
+            <th class="num">${t('settings.mxView')}</th><th class="num">${t('settings.mxEdit')}</th>
+            <th class="num">${t('settings.mxView')}</th><th class="num">${t('settings.mxEdit')}</th>
+          </tr>
+        </thead>
+        <tbody id="matrix-tbody"><tr><td colspan="8" class="empty-state">${t('common.loading')}</td></tr></tbody>
       </table>
+      <div class="form-actions" style="justify-content:flex-start;align-items:center;">
+        <button id="matrix-save-btn" class="btn btn-primary">${t('common.save')}</button>
+        <span id="matrix-save-msg" style="color:var(--success);font-size:0.85rem;"></span>
+      </div>
     </div>
   `;
-
-  function matrixRow(label, mitarbeiter, approver, ppm, admin) {
-    return `<tr><td>${label}</td><td class="num">${mitarbeiter}</td><td class="num">${approver}</td><td class="num">${ppm}</td><td class="num">${admin}</td></tr>`;
-  }
 
   const { data } = await supabase.from('app_config').select('*');
   const map = new Map((data || []).map(c => [c.key, c.value]));
@@ -125,59 +98,85 @@ export async function renderSettings(container) {
     }
   });
 
-  document.getElementById('jd-form').addEventListener('submit', async e => {
-    e.preventDefault();
-    const name = document.getElementById('f-jd-name').value.trim();
-    const { error } = await supabase.from('job_descriptions').insert({ name });
-    if (error) { alert(t('common.error') + '\n' + error.message); return; }
-    e.target.reset();
-    loadJobDescriptions();
-  });
-
-  async function loadJobDescriptions() {
-    const tbody = document.getElementById('jd-tbody');
-    const { data: jds, error } = await supabase.from('job_descriptions').select('*').order('name');
-    if (error) { tbody.innerHTML = `<tr><td colspan="2" class="empty-state">${t('common.error')}</td></tr>`; return; }
-    if (!jds.length) { tbody.innerHTML = `<tr><td colspan="2" class="empty-state">${t('common.none')}</td></tr>`; return; }
-
-    tbody.innerHTML = jds.map(jd => `
-      <tr data-id="${jd.id}">
-        <td>${escapeHtml(jd.name)}</td>
-        <td class="row-actions">
-          ${iconButton(ICON_EDIT, t('common.edit'), 'jd-edit-btn')}
-          ${iconButton(ICON_DELETE, t('common.delete'), 'jd-delete-btn')}
-        </td>
-      </tr>
-    `).join('');
-
-    tbody.querySelectorAll('.jd-edit-btn').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        const row = btn.closest('tr');
-        const jd = jds.find(x => x.id === row.dataset.id);
-        const newName = prompt(t('settings.jobDescriptionName'), jd.name);
-        if (newName === null || !newName.trim()) return;
-        const { error } = await supabase.from('job_descriptions').update({ name: newName.trim() }).eq('id', jd.id);
-        if (error) { alert(t('common.error') + '\n' + error.message); return; }
-        loadJobDescriptions();
-      });
-    });
-
-    tbody.querySelectorAll('.jd-delete-btn').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        if (!confirm(t('common.confirmDelete'))) return;
-        const id = btn.closest('tr').dataset.id;
-        const { error } = await supabase.from('job_descriptions').delete().eq('id', id);
-        if (error) { alert(t('common.error') + '\n' + error.message); return; }
-        loadJobDescriptions();
-      });
-    });
-  }
-
   function escapeHtml(str) {
     return String(str).replace(/[&<>"']/g, s => ({
       '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
     }[s]));
   }
 
-  loadJobDescriptions();
+  loadMatrix();
+
+  const MATRIX_AREAS = [
+    { area: 'genehmigt', label: t('nav.approvals') },
+    { area: 'teams', label: t('nav.teams') },
+    { area: 'employees', label: t('nav.employees') },
+    { area: 'holidays', label: t('nav.holidays') },
+    { area: 'blocked', label: t('nav.blocked') },
+    { area: 'dashboard', label: t('nav.dashboard') },
+    { area: 'sprints', label: t('nav.sprints') },
+    { area: 'bands', label: t('nav.bands') },
+  ];
+  const MATRIX_ROLES = ['mitarbeiter', 'stufe2_genehmiger', 'people_pool_manager'];
+
+  async function loadMatrix() {
+    const tbody = document.getElementById('matrix-tbody');
+    const { data, error } = await supabase.from('role_permissions').select('role, area, can_view, can_edit').in('role', MATRIX_ROLES);
+    if (error) { tbody.innerHTML = `<tr><td colspan="8" class="empty-state">${t('common.error')}</td></tr>`; return; }
+
+    const map = new Map();
+    (data || []).forEach(row => map.set(row.role + ':' + row.area, row));
+
+    tbody.innerHTML = MATRIX_AREAS.map(({ area, label }) => {
+      const cells = MATRIX_ROLES.map(role => {
+        const row = map.get(role + ':' + area) || { can_view: false, can_edit: false };
+        return `
+          <td class="num"><input type="checkbox" class="mx-view" data-role="${role}" data-area="${area}" ${row.can_view ? 'checked' : ''}></td>
+          <td class="num"><input type="checkbox" class="mx-edit" data-role="${role}" data-area="${area}" ${row.can_edit ? 'checked' : ''}></td>
+        `;
+      }).join('');
+      return `<tr><td>${label}</td>${cells}<td class="num" style="color:var(--text-muted);">${t('settings.mxAlways')}</td></tr>`;
+    }).join('');
+
+    // Bearbeiten setzt automatisch Sehen voraus - beide haengen zusammen, damit keine
+    // widerspruechliche Kombination (Bearbeiten ohne Sehen) entstehen kann.
+    tbody.querySelectorAll('.mx-edit').forEach(cb => {
+      cb.addEventListener('change', () => {
+        if (cb.checked) {
+          const viewCb = tbody.querySelector(`.mx-view[data-role="${cb.dataset.role}"][data-area="${cb.dataset.area}"]`);
+          if (viewCb) viewCb.checked = true;
+        }
+      });
+    });
+    tbody.querySelectorAll('.mx-view').forEach(cb => {
+      cb.addEventListener('change', () => {
+        if (!cb.checked) {
+          const editCb = tbody.querySelector(`.mx-edit[data-role="${cb.dataset.role}"][data-area="${cb.dataset.area}"]`);
+          if (editCb) editCb.checked = false;
+        }
+      });
+    });
+  }
+
+  document.getElementById('matrix-save-btn').addEventListener('click', async () => {
+    const tbody = document.getElementById('matrix-tbody');
+    const rows = [];
+    MATRIX_ROLES.forEach(role => {
+      MATRIX_AREAS.forEach(({ area }) => {
+        const viewCb = tbody.querySelector(`.mx-view[data-role="${role}"][data-area="${area}"]`);
+        const editCb = tbody.querySelector(`.mx-edit[data-role="${role}"][data-area="${area}"]`);
+        rows.push({ role, area, can_view: viewCb.checked, can_edit: editCb.checked });
+      });
+    });
+
+    const { error } = await supabase.from('role_permissions').upsert(rows, { onConflict: 'role,area' });
+    const msg = document.getElementById('matrix-save-msg');
+    if (error) {
+      msg.style.color = 'var(--danger)';
+      msg.textContent = t('common.error') + ': ' + error.message;
+    } else {
+      msg.style.color = 'var(--success)';
+      msg.textContent = t('settings.matrixSaved');
+      setTimeout(() => { msg.textContent = ''; }, 2500);
+    }
+  });
 }

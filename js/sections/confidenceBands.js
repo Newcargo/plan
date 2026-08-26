@@ -3,7 +3,8 @@ import { t } from '../i18n.js';
 import { ICON_EDIT, ICON_DELETE, iconButton, fieldLabel } from '../icons.js';
 import { openFormModal } from '../modal.js';
 
-export async function renderBands(container) {
+export async function renderBands(container, context) {
+  const canEdit = !!(context && context.permissions && context.permissions.bands && context.permissions.bands.edit);
   container.innerHTML = `
     <header>
       <h1>${t('bands.title')}</h1>
@@ -12,7 +13,7 @@ export async function renderBands(container) {
     <div class="card">
       <div class="toolbar">
         <div></div>
-        <button type="button" class="btn btn-primary" id="open-add-btn">${t('common.add')}</button>
+        ${canEdit ? `<button type="button" class="btn btn-primary" id="open-add-btn">${t('common.add')}</button>` : ''}
       </div>
       <table>
         <thead><tr>
@@ -68,7 +69,7 @@ export async function renderBands(container) {
     });
   }
 
-  document.getElementById('open-add-btn').addEventListener('click', openAdd);
+  if (canEdit) document.getElementById('open-add-btn').addEventListener('click', openAdd);
 
   async function load() {
     const tbody = document.getElementById('band-tbody');
@@ -82,8 +83,8 @@ export async function renderBands(container) {
         <td class="num mono">${Math.round(Number(b.lower_pct) * 100)}%</td>
         <td class="num mono">${Math.round(Number(b.upper_pct) * 100)}%</td>
         <td class="row-actions">
-          ${iconButton(ICON_EDIT, t('common.edit'), 'edit-btn')}
-          ${iconButton(ICON_DELETE, t('common.delete'), 'delete-btn')}
+          ${canEdit ? iconButton(ICON_EDIT, t('common.edit'), 'edit-btn') : ''}
+          ${canEdit ? iconButton(ICON_DELETE, t('common.delete'), 'delete-btn') : ''}
         </td>
       </tr>
     `).join('');

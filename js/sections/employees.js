@@ -5,7 +5,8 @@ import { createSortState, sortableHeader, wireSortHeaders, sortArray } from '../
 import { openFormModal, showConfirmModal } from '../modal.js';
 import { invokeAdminUsers } from '../adminUsers.js';
 
-export async function renderEmployees(container) {
+export async function renderEmployees(container, context) {
+  const canEdit = !!(context && context.permissions && context.permissions.employees && context.permissions.employees.edit);
   const sortState = createSortState('full_name', true);
 
   container.innerHTML = `
@@ -13,17 +14,16 @@ export async function renderEmployees(container) {
     <div class="card">
       <div class="toolbar">
         <div></div>
-        <button type="button" class="btn btn-primary" id="open-add-btn">${t('common.add')}</button>
+        ${canEdit ? `<button type="button" class="btn btn-primary" id="open-add-btn">${t('common.add')}</button>` : ''}
       </div>
       <table>
         <thead><tr id="emp-thead-row"></tr></thead>
-        <tbody id="emp-tbody"><tr><td colspan="9" class="empty-state">${t('common.loading')}</td></tr></tbody>
+        <tbody id="emp-tbody"><tr><td colspan="8" class="empty-state">${t('common.loading')}</td></tr></tbody>
       </table>
     </div>
   `;
 
   let teams = [];
-  let jobDescriptions = [];
   let empsData = [];
   let reductionMap = new Map();
 
@@ -31,17 +31,12 @@ export async function renderEmployees(container) {
   teams = teamData || [];
   const teamMap = new Map(teams.map(tm => [tm.id, tm.name]));
 
-  const { data: jdData } = await supabase.from('job_descriptions').select('id, name').order('name');
-  jobDescriptions = jdData || [];
-  const jobDescMap = new Map(jobDescriptions.map(jd => [jd.id, jd.name]));
-
   function wireHead() {
     const row = document.getElementById('emp-thead-row');
     row.innerHTML = `
       ${sortableHeader(t('employees.fullName'), 'full_name', sortState)}
       <th>${t('roles.email')}</th>
       ${sortableHeader(t('employees.team'), 'team_name', sortState)}
-      <th>${t('employees.jobDescription')}</th>
       <th class="num">${t('employees.employmentPct')}</th>
       <th class="num">${t('employees.effective')}</th>
       <th>${t('employees.active')}</th>
@@ -65,9 +60,6 @@ export async function renderEmployees(container) {
 
         ${fieldLabel(t('employees.team'), 'Team-Zuordnung bestimmt den Standard-Fokusfaktor und Team-Puffer für die Kapazitätsberechnung dieser Person.')}
         <select id="mf-team">${teams.map(tm => `<option value="${tm.id}" ${emp && emp.team_id === tm.id ? 'selected' : ''}>${escapeHtml(tm.name)}</option>`).join('')}</select>
-
-        ${fieldLabel(t('employees.jobDescription'), 'Funktionsbezeichnung, wird unter Einstellungen als Liste verwaltet.')}
-        <select id="mf-jobdesc"><option value="">–</option>${jobDescriptions.map(jd => `<option value="${jd.id}" ${emp && emp.job_description_id === jd.id ? 'selected' : ''}>${escapeHtml(jd.name)}</option>`).join('')}</select>
 
         ${fieldLabel(t('employees.employmentPct'), 'Beschäftigungsgrad (0–1), z. B. 0.8 für 80%. Fliesst direkt in die Kapazitätsberechnung ein.')}
         <input type="number" id="mf-pensum" min="0" max="1" step="0.01" required value="${emp ? emp.employment_pct : '1.00'}">
@@ -104,7 +96,6 @@ export async function renderEmployees(container) {
     const payload = {
       full_name: modal.body.querySelector('#mf-name').value.trim(),
       team_id: modal.body.querySelector('#mf-team').value || null,
-      job_description_id: modal.body.querySelector('#mf-jobdesc').value || null,
       employment_pct: modal.body.querySelector('#mf-pensum').value,
       focus_factor_override: modal.body.querySelector('#mf-focus-override').value || null,
       individual_factor: indivFactor || null,
@@ -144,15 +135,15 @@ export async function renderEmployees(container) {
     });
   }
 
-  document.getElementById('open-add-btn').addEventListener('click', openAdd);
+  if (canEdit) document.getElementById('open-add-btn').addEventListener('click', openAdd);
 
   async function loadEmployees() {
     const tbody = document.getElementById('emp-tbody');
     const { data: emps, error } = await supabase
       .from('employees')
-      .select('id, full_name, email, team_id, job_description_id, employment_pct, focus_factor_override, individual_factor, individual_factor_note, is_external, active, auth_user_id');
+      .select('id, full_name, email, team_id, employment_pct, focus_factor_override, individual_factor, individual_factor_note, is_external, active, auth_user_id');
 
-    if (error) { tbody.innerHTML = `<tr><td colspan="9" class="empty-state">${t('common.error')}</td></tr>`; return; }
+    if (error) { tbody.innerHTML = `<tr><td colspan="8" class="empty-state">${t('common.error')}</td></tr>`; return; }
 
     const { data: reductions } = await supabase.from('v_employee_reduction').select('employee_id, effective_reduction_pct');
     reductionMap = new Map((reductions || []).map(r => [r.employee_id, r.effective_reduction_pct]));
@@ -163,7 +154,7 @@ export async function renderEmployees(container) {
 
   function renderRows() {
     const tbody = document.getElementById('emp-tbody');
-    if (!empsData.length) { tbody.innerHTML = `<tr><td colspan="9" class="empty-state">${t('common.none')}</td></tr>`; return; }
+    if (!empsData.length) { tbody.innerHTML = `<tr><td colspan="8" class="empty-state">${t('common.none')}</td></tr>`; return; }
 
     sortArray(empsData, sortState);
 
@@ -175,7 +166,6 @@ export async function renderEmployees(container) {
           <td>${escapeHtml(emp.full_name)}${emp.is_external ? ` <span class="badge badge-muted">extern</span>` : ''}</td>
           <td>${emp.email ? escapeHtml(emp.email) : '–'}</td>
           <td>${escapeHtml(emp.team_name || '–')}</td>
-          <td>${escapeHtml(jobDescMap.get(emp.job_description_id) || '–')}</td>
           <td class="num mono">${Number(emp.employment_pct).toFixed(2)}</td>
           <td class="num mono">${effPct}</td>
           <td>${emp.active
@@ -185,8 +175,8 @@ export async function renderEmployees(container) {
             ? `<span class="badge badge-success">${t('employees.hasLogin')}</span>`
             : `<span class="badge badge-muted">${t('employees.noLogin')}</span>`}</td>
           <td class="row-actions">
-            ${iconButton(ICON_EDIT, t('common.edit'), 'edit-btn')}
-            ${iconButton(ICON_DELETE, t('common.delete'), 'delete-btn')}
+            ${canEdit ? iconButton(ICON_EDIT, t('common.edit'), 'edit-btn') : ''}
+            ${canEdit ? iconButton(ICON_DELETE, t('common.delete'), 'delete-btn') : ''}
           </td>
         </tr>
       `;

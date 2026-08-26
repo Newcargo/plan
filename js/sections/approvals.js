@@ -17,7 +17,8 @@ export async function renderApprovals(container, context) {
   const roles = (context && context.roles) || new Set();
   const currentEmployeeId = context && context.employee && context.employee.id;
   const currentEmployeeName = context && context.employee && context.employee.full_name;
-  const canApprove = roles.has('stufe2_genehmiger') || roles.has('admin');
+  const permissions = (context && context.permissions) || {};
+  const canApprove = !!(permissions.genehmigt && permissions.genehmigt.edit);
   const isAdmin = roles.has('admin');
 
   let reminderDays = 5;

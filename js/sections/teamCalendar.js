@@ -64,7 +64,8 @@ export async function renderTeamCalendar(container, context) {
   const myEmployeeId = context && context.employee && context.employee.id;
   const myEmployeeName = context && context.employee && context.employee.full_name;
   const roles = (context && context.roles) || new Set();
-  const canApprove = roles.has('stufe2_genehmiger') || roles.has('admin');
+  const permissions = (context && context.permissions) || {};
+  const canApprove = !!(permissions.genehmigt && permissions.genehmigt.edit);
   let emailEnabled = true;
   let cursor = new Date();
   cursor.setDate(1);

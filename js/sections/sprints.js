@@ -5,7 +5,8 @@ import { createSortState, sortableHeader, wireSortHeaders, sortArray } from '../
 import { formatDate, todayISO } from '../dateFormat.js';
 import { openFormModal } from '../modal.js';
 
-export async function renderSprints(container) {
+export async function renderSprints(container, context) {
+  const canEdit = !!(context && context.permissions && context.permissions.sprints && context.permissions.sprints.edit);
   const sortState = createSortState('sprint_number', true);
   let sprintsData = [];
 
@@ -17,19 +18,21 @@ export async function renderSprints(container) {
         ${fieldLabel(t('sprints.piName'), 'Name des Program Increments, frei wählbar und jederzeit im Nachhinein änderbar.')}
         <div style="display:flex; gap:0.5rem; align-items:center;">
           <select id="pi-select" style="flex:1;"></select>
-          ${iconButton(ICON_EDIT, t('common.edit'), 'pi-rename-btn')}
-          ${iconButton(ICON_DELETE, t('common.delete'), 'pi-delete-btn')}
+          ${canEdit ? iconButton(ICON_EDIT, t('common.edit'), 'pi-rename-btn') : ''}
+          ${canEdit ? iconButton(ICON_DELETE, t('common.delete'), 'pi-delete-btn') : ''}
         </div>
       </div>
-      <div class="form-actions" style="justify-content:flex-start;">
-        <button type="button" class="btn btn-secondary" id="open-add-pi-btn">${t('sprints.addPi')}</button>
-      </div>
+      ${canEdit ? `
+        <div class="form-actions" style="justify-content:flex-start;">
+          <button type="button" class="btn btn-secondary" id="open-add-pi-btn">${t('sprints.addPi')}</button>
+        </div>
+      ` : ''}
     </div>
 
     <div class="card">
       <div class="toolbar">
         <div></div>
-        <button type="button" class="btn btn-primary" id="open-add-sprint-btn">${t('sprints.addSprint')}</button>
+        ${canEdit ? `<button type="button" class="btn btn-primary" id="open-add-sprint-btn">${t('sprints.addSprint')}</button>` : ''}
       </div>
       <table>
         <thead><tr id="sprint-thead-row"></tr></thead>
@@ -55,40 +58,42 @@ export async function renderSprints(container) {
   }
   wireHead();
 
-  document.getElementById('open-add-pi-btn').addEventListener('click', () => {
-    const modal = openFormModal({
-      title: t('sprints.addPi'),
-      bodyHtml: `<div class="form-grid"><label>${t('sprints.piName')}</label><input type="text" id="mf-pi-name" placeholder="PI 2026.2" required></div>`,
-      submitLabel: t('common.add'),
-      cancelLabel: t('common.cancel'),
+  if (canEdit) {
+    document.getElementById('open-add-pi-btn').addEventListener('click', () => {
+      const modal = openFormModal({
+        title: t('sprints.addPi'),
+        bodyHtml: `<div class="form-grid"><label>${t('sprints.piName')}</label><input type="text" id="mf-pi-name" placeholder="PI 2026.2" required></div>`,
+        submitLabel: t('common.add'),
+        cancelLabel: t('common.cancel'),
+      });
+      modal.submitBtn.addEventListener('click', async () => {
+        const name = modal.body.querySelector('#mf-pi-name').value.trim();
+        if (!name) return;
+        const { error } = await supabase.from('program_increments').insert({ name });
+        if (error) { alert(t('common.error') + '\n' + error.message); return; }
+        modal.close();
+        await loadPis(name);
+      });
     });
-    modal.submitBtn.addEventListener('click', async () => {
-      const name = modal.body.querySelector('#mf-pi-name').value.trim();
-      if (!name) return;
-      const { error } = await supabase.from('program_increments').insert({ name });
+
+    document.querySelector('.pi-rename-btn').addEventListener('click', async () => {
+      if (!piSelect.value) return;
+      const current = piSelect.options[piSelect.selectedIndex].textContent;
+      const newName = prompt(t('sprints.piName'), current);
+      if (newName === null || !newName.trim()) return;
+      const { error } = await supabase.from('program_increments').update({ name: newName.trim() }).eq('id', piSelect.value);
       if (error) { alert(t('common.error') + '\n' + error.message); return; }
-      modal.close();
-      await loadPis(name);
+      await loadPis(newName.trim());
     });
-  });
 
-  document.querySelector('.pi-rename-btn').addEventListener('click', async () => {
-    if (!piSelect.value) return;
-    const current = piSelect.options[piSelect.selectedIndex].textContent;
-    const newName = prompt(t('sprints.piName'), current);
-    if (newName === null || !newName.trim()) return;
-    const { error } = await supabase.from('program_increments').update({ name: newName.trim() }).eq('id', piSelect.value);
-    if (error) { alert(t('common.error') + '\n' + error.message); return; }
-    await loadPis(newName.trim());
-  });
-
-  document.querySelector('.pi-delete-btn').addEventListener('click', async () => {
-    if (!piSelect.value) return;
-    if (!confirm(t('common.confirmDelete'))) return;
-    const { error } = await supabase.from('program_increments').delete().eq('id', piSelect.value);
-    if (error) { alert(t('common.error') + '\n' + error.message); return; }
-    await loadPis();
-  });
+    document.querySelector('.pi-delete-btn').addEventListener('click', async () => {
+      if (!piSelect.value) return;
+      if (!confirm(t('common.confirmDelete'))) return;
+      const { error } = await supabase.from('program_increments').delete().eq('id', piSelect.value);
+      if (error) { alert(t('common.error') + '\n' + error.message); return; }
+      await loadPis();
+    });
+  }
 
   piSelect.addEventListener('change', loadSprints);
 
@@ -117,24 +122,26 @@ export async function renderSprints(container) {
     });
   }
 
-  document.getElementById('open-add-sprint-btn').addEventListener('click', () => {
-    if (!piSelect.value) return;
-    const modal = openFormModal({ title: t('sprints.addSprint'), bodyHtml: sprintFormBody(null), submitLabel: t('common.add'), cancelLabel: t('common.cancel') });
-    wireDateLink(modal);
-    modal.submitBtn.addEventListener('click', async () => {
-      const payload = {
-        pi_id: piSelect.value,
-        sprint_number: modal.body.querySelector('#mf-nr').value,
-        name: modal.body.querySelector('#mf-name').value.trim() || null,
-        start_date: modal.body.querySelector('#mf-start').value,
-        end_date: modal.body.querySelector('#mf-end').value,
-      };
-      const { error } = await supabase.from('sprints').insert(payload);
-      if (error) { alert(t('common.error') + '\n' + error.message); return; }
-      modal.close();
-      loadSprints();
+  if (canEdit) {
+    document.getElementById('open-add-sprint-btn').addEventListener('click', () => {
+      if (!piSelect.value) return;
+      const modal = openFormModal({ title: t('sprints.addSprint'), bodyHtml: sprintFormBody(null), submitLabel: t('common.add'), cancelLabel: t('common.cancel') });
+      wireDateLink(modal);
+      modal.submitBtn.addEventListener('click', async () => {
+        const payload = {
+          pi_id: piSelect.value,
+          sprint_number: modal.body.querySelector('#mf-nr').value,
+          name: modal.body.querySelector('#mf-name').value.trim() || null,
+          start_date: modal.body.querySelector('#mf-start').value,
+          end_date: modal.body.querySelector('#mf-end').value,
+        };
+        const { error } = await supabase.from('sprints').insert(payload);
+        if (error) { alert(t('common.error') + '\n' + error.message); return; }
+        modal.close();
+        loadSprints();
+      });
     });
-  });
+  }
 
   function openEditSprint(s) {
     const modal = openFormModal({ title: t('common.edit'), bodyHtml: sprintFormBody(s), submitLabel: t('common.save'), cancelLabel: t('common.cancel') });
@@ -195,17 +202,17 @@ export async function renderSprints(container) {
         <td>${escapeHtml(s.name || '')}</td>
         <td class="mono">${formatDate(s.start_date)}</td>
         <td class="mono">${formatDate(s.end_date)}</td>
-        <td><input type="checkbox" class="closed-toggle" ${s.is_closed ? 'checked' : ''}></td>
+        <td><input type="checkbox" class="closed-toggle" ${s.is_closed ? 'checked' : ''} ${canEdit ? '' : 'disabled'}></td>
         <td class="num">
           ${s.capacityTotal !== null && s.capacityTotal !== undefined
             ? `<span class="mono">${s.capacityTotal.toFixed(1)} PT</span>`
             : `<span class="empty-state" style="padding:0;">${t('sprints.notCalculated')}</span>`}
-          <button type="button" class="btn btn-primary calc-capacity-btn" style="margin-left:0.5rem;">${t('sprints.calculate')}</button>
-          <button type="button" class="btn btn-teal velocity-btn" style="margin-left:0.35rem;">${t('sprints.storyPoints')}</button>
+          ${canEdit ? `<button type="button" class="btn btn-primary calc-capacity-btn" style="margin-left:0.5rem;">${t('sprints.calculate')}</button>` : ''}
+          ${canEdit ? `<button type="button" class="btn btn-teal velocity-btn" style="margin-left:0.35rem;">${t('sprints.storyPoints')}</button>` : ''}
         </td>
         <td class="row-actions">
-          ${iconButton(ICON_EDIT, t('common.edit'), 'edit-btn')}
-          ${iconButton(ICON_DELETE, t('common.delete'), 'delete-btn')}
+          ${canEdit ? iconButton(ICON_EDIT, t('common.edit'), 'edit-btn') : ''}
+          ${canEdit ? iconButton(ICON_DELETE, t('common.delete'), 'delete-btn') : ''}
         </td>
       </tr>
     `).join('');

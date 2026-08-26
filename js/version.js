@@ -6,9 +6,41 @@
 //
 // Bei jeder Aenderung: APP_VERSION anpassen UND einen neuen Eintrag oben in CHANGELOG ergaenzen.
 
-export const APP_VERSION = '2.4.0';
+export const APP_VERSION = '2.6.0';
 
 export const CHANGELOG = [
+  {
+    version: '2.6.0',
+    date: '2026-08-25',
+    changes: {
+      de: [
+        'Jobbezeichnungen komplett entfernt - flossen nirgends in Berechnungen ein, waren rein informativ. Betroffen: Verwaltung unter Einstellungen, Dropdown und Spalte bei Mitarbeitern, zugehörige Datenbank-Tabelle',
+      ],
+      en: [
+        'Job descriptions removed entirely - they never factored into any calculation, purely informational. Affected: management under Settings, the dropdown and column on Employees, the related database table',
+      ],
+    },
+  },
+  {
+    version: '2.5.0',
+    date: '2026-08-25',
+    changes: {
+      de: [
+        'Neu: Konfigurierbare Rollen-Berechtigungen für acht Bereiche (Genehmigungen, Teams, Mitarbeiter, Feiertage, Sperrzeiten, Übersicht, PI & Sprints, Konfidenzband) - Sehen/Bearbeiten pro Rolle einzeln einstellbar',
+        'Echte Absicherung auf Datenbank-Ebene, nicht nur im Menü versteckt - "Bearbeiten" setzt automatisch "Sehen" voraus',
+        '"Rollen & Zugriff", "Audit-Log" und "Einstellungen" bleiben bewusst fest bei Admin, um Selbstberechtigung über die neue Matrix zu verhindern',
+        'Admin hat immer und unabhängig von der Tabelle vollen Zugriff (Sicherheitsnetz, analog zum Schutz des letzten Admins)',
+        'Einstellungen: die bisher schreibgeschützte Rollen-Übersicht ist jetzt die echte, editierbare Berechtigungs-Matrix',
+      ],
+      en: [
+        'New: configurable role permissions for eight areas (Approvals, Teams, Employees, Holidays, Blocked Periods, Overview, PI & Sprints, Confidence Bands) - view/edit individually settable per role',
+        'Real enforcement at the database level, not just hidden in the menu - "Edit" automatically implies "View"',
+        '"Roles & Access", "Audit log", and "Settings" deliberately stay fixed to Admin, to prevent self-granted access via the new matrix',
+        'Admin always has full access regardless of the table content (safety net, similar to the last-admin protection)',
+        'Settings: the previously read-only role overview is now the real, editable permission matrix',
+      ],
+    },
+  },
   {
     version: '2.4.0',
     date: '2026-08-25',
