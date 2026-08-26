@@ -6,9 +6,23 @@
 //
 // Bei jeder Aenderung: APP_VERSION anpassen UND einen neuen Eintrag oben in CHANGELOG ergaenzen.
 
-export const APP_VERSION = '2.3.0';
+export const APP_VERSION = '2.4.0';
 
 export const CHANGELOG = [
+  {
+    version: '2.4.0',
+    date: '2026-08-25',
+    changes: {
+      de: [
+        'Einstellungen: neue Rollen-Übersicht "Wer darf was" - zeigt pro Bereich, ob Mitarbeiter/Projekt Approver/People Pool Manager/Admin sehen und/oder bearbeiten dürfen',
+        'Bewusst schreibgeschützt, keine editierbare Berechtigungs-Konfiguration: die echte Absicherung läuft über Datenbank-Regeln, ein reines UI-Häkchen ohne passende Regel wäre trügerische Sicherheit',
+      ],
+      en: [
+        'Settings: new "who can do what" role overview - shows per area whether Employee/Project Approver/People Pool Manager/Admin can view and/or edit',
+        'Deliberately read-only, not an editable permission configuration: actual enforcement runs through database rules - a UI checkbox without a matching rule would be false security',
+      ],
+    },
+  },
   {
     version: '2.3.0',
     date: '2026-08-25',

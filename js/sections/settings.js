@@ -45,7 +45,43 @@ export async function renderSettings(container) {
         <tbody id="jd-tbody"><tr><td colspan="2" class="empty-state">${t('common.loading')}</td></tr></tbody>
       </table>
     </div>
+
+    <div class="card">
+      <div class="form-panel-title">${t('settings.matrixTitle')}</div>
+      <p style="font-size:0.82rem; color:var(--text-muted); margin:-0.25rem 0 0.9rem;">${t('settings.matrixHint')}</p>
+      <table>
+        <thead><tr>
+          <th>${t('settings.matrixArea')}</th>
+          <th class="num">${t('roles.mitarbeiter')}</th>
+          <th class="num">${t('roles.stufe2_genehmiger')}</th>
+          <th class="num">${t('roles.people_pool_manager')}</th>
+          <th class="num">${t('roles.admin')}</th>
+        </tr></thead>
+        <tbody>
+          ${matrixRow(t('nav.myLeave'), t('settings.mxOwnEdit'), t('settings.mxOwnEdit'), t('settings.mxOwnEdit'), t('settings.mxOwnEditPlus'))}
+          ${matrixRow(t('nav.teamCalendar'), t('settings.mxView'), t('settings.mxViewApprove'), t('settings.mxView'), t('settings.mxViewApprove'))}
+          ${matrixRow(t('nav.approvals'), t('settings.mxNone'), t('settings.mxViewEdit'), t('settings.mxViewOnly'), t('settings.mxViewEdit'))}
+          ${matrixRow(t('nav.teams'), t('settings.mxNone'), t('settings.mxNone'), t('settings.mxNone'), t('settings.mxViewEdit'))}
+          ${matrixRow(t('nav.employees'), t('settings.mxNone'), t('settings.mxNone'), t('settings.mxNone'), t('settings.mxViewEdit'))}
+          ${matrixRow(t('nav.holidays'), t('settings.mxNone'), t('settings.mxNone'), t('settings.mxNone'), t('settings.mxViewEdit'))}
+          ${matrixRow(t('nav.blocked'), t('settings.mxNone'), t('settings.mxNone'), t('settings.mxNone'), t('settings.mxViewEdit'))}
+          ${matrixRow(t('nav.dashboard'), t('settings.mxNone'), t('settings.mxNone'), t('settings.mxNone'), t('settings.mxViewOnly'))}
+          ${matrixRow(t('nav.sprints'), t('settings.mxNone'), t('settings.mxNone'), t('settings.mxNone'), t('settings.mxViewEdit'))}
+          ${matrixRow(t('nav.bands'), t('settings.mxNone'), t('settings.mxNone'), t('settings.mxNone'), t('settings.mxViewEdit'))}
+          ${matrixRow(t('nav.settings'), t('settings.mxNone'), t('settings.mxNone'), t('settings.mxNone'), t('settings.mxViewEdit'))}
+          ${matrixRow(t('nav.roles'), t('settings.mxNone'), t('settings.mxNone'), t('settings.mxNone'), t('settings.mxViewEdit'))}
+          ${matrixRow(t('nav.auditLog'), t('settings.mxNone'), t('settings.mxNone'), t('settings.mxNone'), t('settings.mxViewOnly'))}
+          ${matrixRow(t('account.title'), t('settings.mxOwnEdit'), t('settings.mxOwnEdit'), t('settings.mxOwnEdit'), t('settings.mxOwnEdit'))}
+          ${matrixRow(t('nav.help'), t('settings.mxViewOnly'), t('settings.mxViewOnly'), t('settings.mxViewOnly'), t('settings.mxViewOnly'))}
+          ${matrixRow(t('nav.changelog'), t('settings.mxViewOnly'), t('settings.mxViewOnly'), t('settings.mxViewOnly'), t('settings.mxViewOnly'))}
+        </tbody>
+      </table>
+    </div>
   `;
+
+  function matrixRow(label, mitarbeiter, approver, ppm, admin) {
+    return `<tr><td>${label}</td><td class="num">${mitarbeiter}</td><td class="num">${approver}</td><td class="num">${ppm}</td><td class="num">${admin}</td></tr>`;
+  }
 
   const { data } = await supabase.from('app_config').select('*');
   const map = new Map((data || []).map(c => [c.key, c.value]));
