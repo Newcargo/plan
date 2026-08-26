@@ -1,6 +1,8 @@
 import { supabase } from '../supabaseClient.js';
 import { t } from '../i18n.js';
-import { formatMonthYear, localISO, todayISO } from '../dateFormat.js';
+import { formatMonthYear, localISO, todayISO, formatDate } from '../dateFormat.js';
+import { openFormModal } from '../modal.js';
+import { sendDecisionMail } from '../leaveDecision.js';
 
 const STATUS_COLORS = {
   beantragt: { bg: '#E0A400', text: '#000', code: 'BE' },
@@ -60,6 +62,9 @@ function buildContinuousSegments(dayInfo, getLabel) {
 
 export async function renderTeamCalendar(container, context) {
   const myEmployeeId = context && context.employee && context.employee.id;
+  const myEmployeeName = context && context.employee && context.employee.full_name;
+  const roles = (context && context.roles) || new Set();
+  const canApprove = roles.has('stufe2_genehmiger') || roles.has('admin');
   let cursor = new Date();
   cursor.setDate(1);
   cursor.setHours(0, 0, 0, 0);
@@ -89,6 +94,7 @@ export async function renderTeamCalendar(container, context) {
         <span><span class="swatch" style="background:${WEEKEND_BG}; border:1px solid var(--border);"></span>${t('teamCal.legendWeekend')}</span>
         <span><span class="swatch" style="background:${PI_SPRINT_COLOR};"></span>${t('teamCal.legendPiSprint')}</span>
       </div>
+      ${canApprove ? `<p style="font-size:0.8rem; color:var(--accent); margin-top:0.5rem;">💡 ${t('teamCal.clickToDecide')}: ${t('myLeave.status.beantragt')}</p>` : ''}
     </div>
   `;
 
@@ -127,7 +133,7 @@ export async function renderTeamCalendar(container, context) {
     const [teamsRes, employeesRes, leaveRes, holidaysRes, blockedRes, sprintsRes, pisRes] = await Promise.all([
       supabase.from('teams').select('id, name').order('name'),
       supabase.from('employees').select('id, full_name, team_id').eq('active', true),
-      supabase.from('v_leave_calendar').select('employee_id, start_date, end_date, status, day_portion, absence_type').lte('start_date', monthEndISO).gte('end_date', monthStartISO),
+      supabase.from('v_leave_calendar').select('id, employee_id, start_date, end_date, status, day_portion, absence_type').lte('start_date', monthEndISO).gte('end_date', monthStartISO),
       supabase.from('holidays').select('date, name, note').gte('date', monthStartISO).lte('date', monthEndISO),
       supabase.from('blocked_periods').select('start_date, end_date, label').lte('start_date', monthEndISO).gte('end_date', monthStartISO),
       supabase.from('sprints').select('id, pi_id, sprint_number, name, start_date, end_date').lte('start_date', monthEndISO).gte('end_date', monthStartISO),
@@ -243,7 +249,8 @@ export async function renderTeamCalendar(container, context) {
               const bottomStyle = !topIsStatus ? `background:${meta.bg};color:${meta.text};` : (contextBg ? `background:${contextBg};` : '');
               const topCode = topIsStatus ? meta.code : '';
               const bottomCode = !topIsStatus ? meta.code : '';
-              return `<td class="cal-cell cal-cell-split" title="${escapeHtml(statusTitle)}">
+              const clickable = canApprove && statusKey === 'beantragt';
+              return `<td class="cal-cell cal-cell-split${clickable ? ' cal-cell-clickable' : ''}" title="${escapeHtml(statusTitle)}${clickable ? ' - ' + escapeHtml(t('teamCal.clickToDecide')) : ''}" ${clickable ? `data-leave-id="${leave.id}"` : ''}>
                 <div class="cal-cell-half" style="${topStyle}">${topCode}</div>
                 <div class="cal-cell-half" style="${bottomStyle}">${bottomCode}</div>
               </td>`;
@@ -263,7 +270,9 @@ export async function renderTeamCalendar(container, context) {
               title = contextTitle;
             }
             const style = `${bg ? `background:${bg};` : ''}${textColor ? `color:${textColor};` : ''}`;
-            return `<td class="cal-cell" style="${style}" title="${escapeHtml(title)}">${code}</td>`;
+            const clickableWhole = canApprove && statusKey === 'beantragt';
+            const fullTitle = clickableWhole ? `${title} - ${t('teamCal.clickToDecide')}` : title;
+            return `<td class="cal-cell${clickableWhole ? ' cal-cell-clickable' : ''}" style="${style}" title="${escapeHtml(fullTitle)}" ${clickableWhole ? `data-leave-id="${leave.id}"` : ''}>${code}</td>`;
           }).join('')}
         </tr>`;
       });
@@ -271,6 +280,85 @@ export async function renderTeamCalendar(container, context) {
     bodyHtml += '</tbody>';
 
     table.innerHTML = headHtml + bodyHtml;
+
+    if (canApprove) {
+      table.querySelectorAll('.cal-cell-clickable').forEach(cell => {
+        cell.addEventListener('click', () => openDecisionModal(cell.dataset.leaveId));
+      });
+    }
+  }
+
+  async function openDecisionModal(leaveId) {
+    const { data: r, error } = await supabase
+      .from('leave_requests')
+      .select('id, start_date, end_date, day_portion, comment_stufe2, employees!leave_requests_employee_id_fkey(full_name, is_external, email)')
+      .eq('id', leaveId)
+      .maybeSingle();
+
+    if (error || !r) { alert(t('common.error')); return; }
+
+    const period = r.start_date === r.end_date ? formatDate(r.start_date) : `${formatDate(r.start_date)} – ${formatDate(r.end_date)}`;
+    const portion = r.day_portion !== 'ganztag' ? t('myLeave.dayPortion.' + r.day_portion) : t('myLeave.dayPortion.ganztag');
+
+    const bodyHtml = `
+      <div class="form-grid">
+        <label>${t('approvals.employee')}</label><div>${escapeHtml(r.employees?.full_name || '–')}${r.employees?.is_external ? ' <span class="badge badge-muted">extern</span>' : ''}</div>
+        <label>${t('myLeave.period')}</label><div class="mono">${period}</div>
+        <label>${t('myLeave.dayPortion')}</label><div>${portion}</div>
+      </div>
+      <div class="field" style="margin-top:0.75rem;">
+        <label>${t('approvals.commentLabel')}</label>
+        <textarea id="cal-decision-comment" rows="3" style="width:100%; padding:0.5rem 0.65rem; border:1px solid var(--border); border-radius:6px; font-family:inherit; font-size:0.85rem;"></textarea>
+      </div>
+      <p id="cal-decision-error" class="error-text" hidden></p>
+      <div class="form-actions" style="justify-content:flex-end; gap:0.5rem; margin-top:0.75rem;">
+        <button type="button" class="btn btn-success" id="cal-approve-btn">${t('approvals.approve')}</button>
+        <button type="button" class="btn btn-danger" id="cal-reject-btn">${t('approvals.reject')}</button>
+      </div>
+    `;
+
+    const modal = openFormModal({
+      title: t('teamCal.decisionTitle'),
+      bodyHtml,
+      submitLabel: t('common.save'),
+      cancelLabel: t('common.cancel'),
+    });
+    modal.submitBtn.style.display = 'none';
+
+    const commentEl = modal.body.querySelector('#cal-decision-comment');
+    const errorEl = modal.body.querySelector('#cal-decision-error');
+
+    modal.body.querySelector('#cal-approve-btn').addEventListener('click', async () => {
+      const comment = commentEl.value.trim() || null;
+      const { error: updErr } = await supabase.from('leave_requests').update({
+        status: 'genehmigt_projekt',
+        comment_stufe2: comment,
+        approved_by: myEmployeeId,
+        approved_at: new Date().toISOString(),
+      }).eq('id', leaveId);
+      if (updErr) { errorEl.textContent = updErr.message; errorEl.hidden = false; return; }
+      await sendDecisionMail({ ...r, comment_stufe2: comment }, myEmployeeName, 'approved');
+      modal.close();
+      load();
+    });
+
+    modal.body.querySelector('#cal-reject-btn').addEventListener('click', async () => {
+      const comment = commentEl.value.trim();
+      if (!comment) {
+        errorEl.textContent = t('approvals.rejectCommentRequired');
+        errorEl.hidden = false;
+        return;
+      }
+      const { error: updErr } = await supabase.from('leave_requests').update({
+        status: 'abgelehnt',
+        comment_stufe2: comment,
+        approved_by: myEmployeeId,
+      }).eq('id', leaveId);
+      if (updErr) { errorEl.textContent = updErr.message; errorEl.hidden = false; return; }
+      await sendDecisionMail({ ...r, comment_stufe2: comment }, myEmployeeName, 'rejected');
+      modal.close();
+      load();
+    });
   }
 
   load();

@@ -159,7 +159,7 @@ export async function renderMyLeave(container, context) {
           </select>
         </div>
         <div class="form-actions" style="justify-content:flex-start;">
-          <button type="submit" class="btn btn-secondary">${t('myLeave.sickSubmit')}</button>
+          <button type="submit" class="btn btn-sick">${t('myLeave.sickSubmit')}</button>
         </div>
       </form>
       <p id="sick-msg" class="error-text" hidden></p>
@@ -437,7 +437,7 @@ export async function renderMyLeave(container, context) {
         }
       }
       if (lr.status === 'genehmigt_projekt') {
-        actions += `<button type="button" class="btn btn-secondary confirm-final-btn">${t('myLeave.confirmFinal')}</button>`;
+        actions += `<button type="button" class="btn btn-success confirm-final-btn">${t('myLeave.confirmFinal')}</button>`;
         actions += `<button type="button" class="btn btn-danger storno-btn">${t('myLeave.storno')}</button>`;
       }
       if (lr.status === 'final_gebucht') {

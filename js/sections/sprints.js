@@ -200,8 +200,8 @@ export async function renderSprints(container) {
           ${s.capacityTotal !== null && s.capacityTotal !== undefined
             ? `<span class="mono">${s.capacityTotal.toFixed(1)} PT</span>`
             : `<span class="empty-state" style="padding:0;">${t('sprints.notCalculated')}</span>`}
-          <button type="button" class="btn btn-secondary calc-capacity-btn" style="margin-left:0.5rem;">${t('sprints.calculate')}</button>
-          <button type="button" class="btn btn-secondary velocity-btn" style="margin-left:0.35rem;">${t('sprints.storyPoints')}</button>
+          <button type="button" class="btn btn-primary calc-capacity-btn" style="margin-left:0.5rem;">${t('sprints.calculate')}</button>
+          <button type="button" class="btn btn-teal velocity-btn" style="margin-left:0.35rem;">${t('sprints.storyPoints')}</button>
         </td>
         <td class="row-actions">
           ${iconButton(ICON_EDIT, t('common.edit'), 'edit-btn')}

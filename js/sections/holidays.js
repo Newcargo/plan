@@ -6,7 +6,7 @@ import { openFormModal } from '../modal.js';
 
 export async function renderHolidays(container) {
   let holidaysData = [];
-  const expandedYears = new Set();
+  const expandedYears = new Set([String(new Date().getFullYear())]);
 
   container.innerHTML = `
     <header><h1>${t('nav.holidays')}</h1></header>

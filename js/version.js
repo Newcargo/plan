@@ -6,9 +6,33 @@
 //
 // Bei jeder Aenderung: APP_VERSION anpassen UND einen neuen Eintrag oben in CHANGELOG ergaenzen.
 
-export const APP_VERSION = '2.0.0';
+export const APP_VERSION = '2.1.0';
 
 export const CHANGELOG = [
+  {
+    version: '2.1.0',
+    date: '2026-08-25',
+    changes: {
+      de: [
+        'Feiertage & Sperrzeiten: aktuelles Jahr startet jetzt aufgeklappt, alle anderen Jahre bleiben zugeklappt',
+        '"Krankheit melden"-Button hat jetzt dieselbe Farbe wie das "K" im Team-Kalender',
+        'Neu: Genehmigen/Ablehnen direkt aus dem Team-Kalender - Klick auf einen "Beantragt"-Eintrag (nur für Projekt Approver/Admin) öffnet ein Pop-up mit Mitarbeiter, Zeitraum, Kommentarfeld und Genehmigen/Ablehnen/Abbrechen',
+        'Genehmigen-Buttons überall grün eingefärbt (Genehmigungen, Team-Kalender, "Final bestätigen" in Mein Urlaub)',
+        'PI-Auswahl auf der Übersicht optisch aufgewertet (grösser, farblich hervorgehoben)',
+        '"Berechnen"- und "Story Points"-Buttons in PI & Sprints eingefärbt',
+        'Hilfe-Seite um den neuen Kalender-Genehmigungsweg ergänzt',
+      ],
+      en: [
+        'Holidays & blocked periods: the current year now starts expanded, all other years stay collapsed',
+        '"Report sick leave" button now matches the color of the "K" marker in the team calendar',
+        'New: approve/reject directly from the team calendar - clicking a "Submitted" entry (project approvers/admin only) opens a pop-up with employee, period, comment field, and approve/reject/cancel',
+        'Approve buttons colored green throughout (Approvals, team calendar, "Confirm final" in My Leave)',
+        'PI selector on the Overview visually upgraded (larger, color-highlighted)',
+        '"Calculate" and "Story Points" buttons in PI & Sprints now colored',
+        'Help page updated with the new calendar-based approval path',
+      ],
+    },
+  },
   {
     version: '2.0.0',
     date: '2026-08-25',

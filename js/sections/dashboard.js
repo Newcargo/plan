@@ -10,7 +10,7 @@ export async function renderDashboard(container) {
     </header>
     <div class="card" style="max-width:420px;">
       <div class="form-panel-title" style="margin-bottom:0.5rem;">${t('dashboard.piSelect')}</div>
-      <select id="dash-pi-select"></select>
+      <select id="dash-pi-select" class="pi-select"></select>
     </div>
     <div id="dash-tiles" class="dash-tiles" style="margin-top:1rem;"></div>
     <div id="dash-content" style="margin-top:1rem;">
