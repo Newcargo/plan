@@ -1,7 +1,7 @@
 import { supabase } from '../supabaseClient.js';
 import { t } from '../i18n.js';
 import { formatMonthYear, localISO, todayISO, formatDate } from '../dateFormat.js';
-import { openFormModal } from '../modal.js';
+import { openFormModal, showConfirmModal } from '../modal.js';
 import { sendDecisionMail } from '../leaveDecision.js';
 
 const STATUS_COLORS = {
@@ -65,6 +65,7 @@ export async function renderTeamCalendar(container, context) {
   const myEmployeeName = context && context.employee && context.employee.full_name;
   const roles = (context && context.roles) || new Set();
   const canApprove = roles.has('stufe2_genehmiger') || roles.has('admin');
+  let emailEnabled = true;
   let cursor = new Date();
   cursor.setDate(1);
   cursor.setHours(0, 0, 0, 0);
@@ -95,6 +96,7 @@ export async function renderTeamCalendar(container, context) {
         <span><span class="swatch" style="background:${PI_SPRINT_COLOR};"></span>${t('teamCal.legendPiSprint')}</span>
       </div>
       ${canApprove ? `<p style="font-size:0.8rem; color:var(--accent); margin-top:0.5rem;">💡 ${t('teamCal.clickToDecide')}: ${t('myLeave.status.beantragt')}</p>` : ''}
+      <p style="font-size:0.8rem; color:var(--accent); margin-top:0.25rem;">💡 ${t('teamCal.clickToConfirmFinal')}: ${t('myLeave.status.genehmigt_projekt')} (${t('teamCal.ownRowOnly')})</p>
     </div>
   `;
 
@@ -130,7 +132,7 @@ export async function renderTeamCalendar(container, context) {
     const daysInMonth = monthEnd.getDate();
     const currentTodayISO = todayISO();
 
-    const [teamsRes, employeesRes, leaveRes, holidaysRes, blockedRes, sprintsRes, pisRes] = await Promise.all([
+    const [teamsRes, employeesRes, leaveRes, holidaysRes, blockedRes, sprintsRes, pisRes, emailCfgRes] = await Promise.all([
       supabase.from('teams').select('id, name').order('name'),
       supabase.from('employees').select('id, full_name, team_id').eq('active', true),
       supabase.from('v_leave_calendar').select('id, employee_id, start_date, end_date, status, day_portion, absence_type').lte('start_date', monthEndISO).gte('end_date', monthStartISO),
@@ -138,7 +140,9 @@ export async function renderTeamCalendar(container, context) {
       supabase.from('blocked_periods').select('start_date, end_date, label').lte('start_date', monthEndISO).gte('end_date', monthStartISO),
       supabase.from('sprints').select('id, pi_id, sprint_number, name, start_date, end_date').lte('start_date', monthEndISO).gte('end_date', monthStartISO),
       supabase.from('program_increments').select('id, name'),
+      supabase.from('app_config').select('value').eq('key', 'email_notifications_enabled').maybeSingle(),
     ]);
+    emailEnabled = emailCfgRes.data ? emailCfgRes.data.value !== false : true;
 
     const teams = teamsRes.data || [];
     const employees = employeesRes.data || [];
@@ -249,8 +253,10 @@ export async function renderTeamCalendar(container, context) {
               const bottomStyle = !topIsStatus ? `background:${meta.bg};color:${meta.text};` : (contextBg ? `background:${contextBg};` : '');
               const topCode = topIsStatus ? meta.code : '';
               const bottomCode = !topIsStatus ? meta.code : '';
-              const clickable = canApprove && statusKey === 'beantragt';
-              return `<td class="cal-cell cal-cell-split${clickable ? ' cal-cell-clickable' : ''}" title="${escapeHtml(statusTitle)}${clickable ? ' - ' + escapeHtml(t('teamCal.clickToDecide')) : ''}" ${clickable ? `data-leave-id="${leave.id}"` : ''}>
+              const action = canApprove && statusKey === 'beantragt' ? 'decide'
+                : (isMe && statusKey === 'genehmigt_projekt' ? 'confirm-final' : '');
+              const hint = action === 'decide' ? t('teamCal.clickToDecide') : (action === 'confirm-final' ? t('teamCal.clickToConfirmFinal') : '');
+              return `<td class="cal-cell cal-cell-split${action ? ' cal-cell-clickable' : ''}" title="${escapeHtml(statusTitle)}${hint ? ' - ' + escapeHtml(hint) : ''}" ${action ? `data-leave-id="${leave.id}" data-action="${action}"` : ''}>
                 <div class="cal-cell-half" style="${topStyle}">${topCode}</div>
                 <div class="cal-cell-half" style="${bottomStyle}">${bottomCode}</div>
               </td>`;
@@ -270,9 +276,11 @@ export async function renderTeamCalendar(container, context) {
               title = contextTitle;
             }
             const style = `${bg ? `background:${bg};` : ''}${textColor ? `color:${textColor};` : ''}`;
-            const clickableWhole = canApprove && statusKey === 'beantragt';
-            const fullTitle = clickableWhole ? `${title} - ${t('teamCal.clickToDecide')}` : title;
-            return `<td class="cal-cell${clickableWhole ? ' cal-cell-clickable' : ''}" style="${style}" title="${escapeHtml(fullTitle)}" ${clickableWhole ? `data-leave-id="${leave.id}"` : ''}>${code}</td>`;
+            const action = canApprove && statusKey === 'beantragt' ? 'decide'
+              : (isMe && statusKey === 'genehmigt_projekt' ? 'confirm-final' : '');
+            const hint = action === 'decide' ? t('teamCal.clickToDecide') : (action === 'confirm-final' ? t('teamCal.clickToConfirmFinal') : '');
+            const fullTitle = hint ? `${title} - ${hint}` : title;
+            return `<td class="cal-cell${action ? ' cal-cell-clickable' : ''}" style="${style}" title="${escapeHtml(fullTitle)}" ${action ? `data-leave-id="${leave.id}" data-action="${action}"` : ''}>${code}</td>`;
           }).join('')}
         </tr>`;
       });
@@ -281,11 +289,30 @@ export async function renderTeamCalendar(container, context) {
 
     table.innerHTML = headHtml + bodyHtml;
 
-    if (canApprove) {
-      table.querySelectorAll('.cal-cell-clickable').forEach(cell => {
-        cell.addEventListener('click', () => openDecisionModal(cell.dataset.leaveId));
+    table.querySelectorAll('.cal-cell-clickable').forEach(cell => {
+      cell.addEventListener('click', () => {
+        if (cell.dataset.action === 'confirm-final') confirmFinalFromCalendar(cell.dataset.leaveId);
+        else openDecisionModal(cell.dataset.leaveId);
       });
-    }
+    });
+  }
+
+  async function confirmFinalFromCalendar(leaveId) {
+    const { data: r } = await supabase.from('leave_requests').select('id, employees!leave_requests_employee_id_fkey(is_external)').eq('id', leaveId).maybeSingle();
+    if (!r) return;
+    const isExternalReq = !!r.employees?.is_external;
+
+    const ok = await showConfirmModal({
+      title: t('myLeave.confirmFinalModalTitle'),
+      message: isExternalReq ? t('myLeave.confirmFinalModalMessageExtern') : t('myLeave.confirmFinalModalMessageIntern'),
+      confirmLabel: t('myLeave.confirmFinalModalConfirm'),
+      cancelLabel: t('common.cancel'),
+    });
+    if (!ok) return;
+
+    const { error } = await supabase.from('leave_requests').update({ status: 'final_gebucht' }).eq('id', leaveId);
+    if (error) { alert(t('common.error') + '\n' + error.message); return; }
+    load();
   }
 
   async function openDecisionModal(leaveId) {
@@ -337,7 +364,7 @@ export async function renderTeamCalendar(container, context) {
         approved_at: new Date().toISOString(),
       }).eq('id', leaveId);
       if (updErr) { errorEl.textContent = updErr.message; errorEl.hidden = false; return; }
-      await sendDecisionMail({ ...r, comment_stufe2: comment }, myEmployeeName, 'approved');
+      if (emailEnabled) await sendDecisionMail({ ...r, comment_stufe2: comment }, myEmployeeName, 'approved');
       modal.close();
       load();
     });
@@ -355,7 +382,7 @@ export async function renderTeamCalendar(container, context) {
         approved_by: myEmployeeId,
       }).eq('id', leaveId);
       if (updErr) { errorEl.textContent = updErr.message; errorEl.hidden = false; return; }
-      await sendDecisionMail({ ...r, comment_stufe2: comment }, myEmployeeName, 'rejected');
+      if (emailEnabled) await sendDecisionMail({ ...r, comment_stufe2: comment }, myEmployeeName, 'rejected');
       modal.close();
       load();
     });

@@ -49,13 +49,14 @@ export async function renderApprovals(container, context) {
       <table>
         <thead><tr>
           <th>${t('approvals.employee')}</th>
+          <th>${t('approvals.type')}</th>
           <th>${t('myLeave.period')}</th>
           <th>${t('myLeave.statusCol')}</th>
           <th>${t('myLeave.comment')}</th>
           <th>${t('approvals.processedBy')}</th>
           <th></th>
         </tr></thead>
-        <tbody id="history-tbody"><tr><td colspan="6" class="empty-state">${t('common.loading')}</td></tr></tbody>
+        <tbody id="history-tbody"><tr><td colspan="7" class="empty-state">${t('common.loading')}</td></tr></tbody>
       </table>
     </div>
   `;
@@ -67,21 +68,29 @@ export async function renderApprovals(container, context) {
   }
 
   function discussedBadge(r) {
+    if (r.absence_type === 'krankheit') return '';
     return r.discussed_with_team
       ? `<span class="badge badge-success" title="${t('approvals.discussedYes')}">${t('approvals.discussedYesShort')}</span>`
       : `<span class="badge badge-warn" title="${t('approvals.discussedNo')}">${t('approvals.discussedNoShort')}</span>`;
   }
 
+  function typeBadge(r) {
+    return r.absence_type === 'krankheit'
+      ? `<span class="badge badge-sick">${t('myLeave.sickBadge')}</span>`
+      : `<span class="badge badge-muted">${t('approvals.typeUrlaub')}</span>`;
+  }
+
   async function loadAll() {
     const { data, error } = await supabase
       .from('leave_requests')
-      .select('id, start_date, end_date, status, day_portion, comment_stufe2, created_at, discussed_with_team, employee_id, employees!leave_requests_employee_id_fkey(full_name, is_external, email), approver:employees!leave_requests_approved_by_fkey(full_name)')
+      .select('id, start_date, end_date, status, day_portion, absence_type, comment_stufe2, created_at, discussed_with_team, employee_id, employees!leave_requests_employee_id_fkey(full_name, is_external, email), approver:employees!leave_requests_approved_by_fkey(full_name)')
       .order('start_date', { ascending: false });
 
     if (error) {
-      ['pending-tbody', 'history-tbody'].forEach(id => {
+      const colspans = { 'pending-tbody': 3, 'history-tbody': 7 };
+      Object.entries(colspans).forEach(([id, cs]) => {
         const el = document.getElementById(id);
-        if (el) el.innerHTML = `<tr><td colspan="6" class="empty-state">${t('common.error')}</td></tr>`;
+        if (el) el.innerHTML = `<tr><td colspan="${cs}" class="empty-state">${t('common.error')}</td></tr>`;
       });
       return;
     }
@@ -163,7 +172,7 @@ export async function renderApprovals(container, context) {
 
   function renderHistory(rows) {
     const tbody = document.getElementById('history-tbody');
-    if (!rows.length) { tbody.innerHTML = `<tr><td colspan="6" class="empty-state">${t('common.none')}</td></tr>`; return; }
+    if (!rows.length) { tbody.innerHTML = `<tr><td colspan="7" class="empty-state">${t('common.none')}</td></tr>`; return; }
 
     tbody.innerHTML = rows.map(r => {
       const meta = STATUS_META[r.status] || { label: r.status, cls: 'badge-muted' };
@@ -172,6 +181,7 @@ export async function renderApprovals(container, context) {
       return `
         <tr data-id="${r.id}">
           <td>${escapeHtml(r.employees?.full_name || '–')}${r.employees?.is_external ? ` <span class="badge badge-muted">extern</span>` : ''} ${discussedBadge(r)}</td>
+          <td>${typeBadge(r)}</td>
           <td class="mono">${formatDate(r.start_date)} – ${formatDate(r.end_date)}${r.day_portion !== 'ganztag' ? ` (${t('myLeave.dayPortion.' + r.day_portion)})` : ''}</td>
           <td><span class="badge ${meta.cls}">${t('myLeave.status.' + r.status) || meta.label}</span></td>
           <td>${escapeHtml(r.comment_stufe2 || '')}</td>

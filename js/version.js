@@ -6,9 +6,27 @@
 //
 // Bei jeder Aenderung: APP_VERSION anpassen UND einen neuen Eintrag oben in CHANGELOG ergaenzen.
 
-export const APP_VERSION = '2.1.0';
+export const APP_VERSION = '2.2.0';
 
 export const CHANGELOG = [
+  {
+    version: '2.2.0',
+    date: '2026-08-25',
+    changes: {
+      de: [
+        'Genehmigungen: neue Spalte "Art" in der Antrags-Historie unterscheidet Urlaub von Krankheit',
+        '"Team nicht informiert"-Badge erscheint nicht mehr bei Krankheitseinträgen (die Frage macht dort keinen Sinn)',
+        'Team-Kalender: eigene genehmigte (noch nicht final gebuchte) Anträge lassen sich jetzt direkt per Klick "Final bestätigen" - ohne Umweg über "Mein Urlaub"',
+        'Team-Kalender: Genehmigen/Ablehnen und Final-Bestätigen respektieren jetzt den "E-Mail-Benachrichtigungen"-Schalter aus den Einstellungen',
+      ],
+      en: [
+        'Approvals: new "Type" column in the request history distinguishes leave from sick leave',
+        'The "Team not informed" badge no longer appears on sick-leave entries (the question doesn\'t apply there)',
+        'Team calendar: your own approved (not yet final-booked) requests can now be confirmed as final with a single click - no detour via "My Leave" needed',
+        'Team calendar: approve/reject and final-confirm now respect the "Email notifications" toggle in Settings',
+      ],
+    },
+  },
   {
     version: '2.1.0',
     date: '2026-08-25',
