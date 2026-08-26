@@ -104,8 +104,6 @@ export async function renderSettings(container) {
     }[s]));
   }
 
-  loadMatrix();
-
   const MATRIX_AREAS = [
     { area: 'genehmigt', label: t('nav.approvals') },
     { area: 'teams', label: t('nav.teams') },
@@ -117,6 +115,8 @@ export async function renderSettings(container) {
     { area: 'bands', label: t('nav.bands') },
   ];
   const MATRIX_ROLES = ['mitarbeiter', 'stufe2_genehmiger', 'people_pool_manager'];
+
+  loadMatrix();
 
   async function loadMatrix() {
     const tbody = document.getElementById('matrix-tbody');

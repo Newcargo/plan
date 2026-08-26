@@ -6,9 +6,21 @@
 //
 // Bei jeder Aenderung: APP_VERSION anpassen UND einen neuen Eintrag oben in CHANGELOG ergaenzen.
 
-export const APP_VERSION = '2.6.0';
+export const APP_VERSION = '2.6.1';
 
 export const CHANGELOG = [
+  {
+    version: '2.6.1',
+    date: '2026-08-25',
+    changes: {
+      de: [
+        'Fehlerbehebung: Die Rollen-Übersicht "Wer darf was" in Einstellungen lud nicht - loadMatrix() wurde vor der Deklaration der dafür nötigen Konstanten aufgerufen (Reihenfolge-Fehler, entstanden beim Entfernen der Jobbezeichnungen). Reihenfolge korrigiert',
+      ],
+      en: [
+        'Bug fix: the "who can do what" role overview in Settings did not load - loadMatrix() was called before the constants it needs were declared (an ordering bug introduced while removing job descriptions). Order corrected',
+      ],
+    },
+  },
   {
     version: '2.6.0',
     date: '2026-08-25',
