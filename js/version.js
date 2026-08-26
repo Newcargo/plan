@@ -6,9 +6,23 @@
 //
 // Bei jeder Aenderung: APP_VERSION anpassen UND einen neuen Eintrag oben in CHANGELOG ergaenzen.
 
-export const APP_VERSION = '2.2.0';
+export const APP_VERSION = '2.3.0';
 
 export const CHANGELOG = [
+  {
+    version: '2.3.0',
+    date: '2026-08-25',
+    changes: {
+      de: [
+        'Fehlerbehebung (wichtig): Projekt Approver/Admin bekamen bei einem neuen Urlaubsantrag keine Glocken-Benachrichtigung - nur der Badge bei "Genehmigungen" wurde aktualisiert. Beides läuft jetzt zusammen',
+        'Klick auf eine Benachrichtigung springt jetzt zur passenden Seite: Mitarbeiter-Meldungen zu "Mein Urlaub", neue Anträge für Approver zu "Genehmigungen" (bisher immer "Mein Urlaub", unabhängig vom Inhalt)',
+      ],
+      en: [
+        'Bug fix (important): project approvers/admin did not get a bell notification for a new leave request - only the "Approvals" badge updated. Both now work together',
+        'Clicking a notification now jumps to the right page: employee notifications go to "My Leave", new-request notifications for approvers go to "Approvals" (previously always "My Leave", regardless of content)',
+      ],
+    },
+  },
   {
     version: '2.2.0',
     date: '2026-08-25',

@@ -150,7 +150,7 @@ async function showApp() {
   applyTranslations();
   document.getElementById('sidebar-version').textContent = 'v' + APP_VERSION;
   renderSidebarUser();
-  initNotifications(currentEmployee.id, () => navigate('my-leave'));
+  initNotifications(currentEmployee.id, (route) => navigate(route || 'my-leave'));
   await navigate(defaultRoute());
   setInterval(() => { refreshBadge(); refreshApprovalsBadge(); }, 60000);
 }

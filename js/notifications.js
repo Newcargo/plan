@@ -3,11 +3,11 @@ import { t } from './i18n.js';
 import { formatDate } from './dateFormat.js';
 
 let currentEmployeeId = null;
-let onNavigateToMyLeave = null;
+let onNavigate = null;
 
 export function initNotifications(employeeId, navigateCallback) {
   currentEmployeeId = employeeId;
-  onNavigateToMyLeave = navigateCallback;
+  onNavigate = navigateCallback;
 
   const btn = document.getElementById('notif-bell-btn');
   const dropdown = document.getElementById('notif-dropdown');
@@ -55,7 +55,7 @@ async function renderDropdown() {
 
   const { data, error } = await supabase
     .from('notifications')
-    .select('id, message, read, created_at, link_leave_request_id')
+    .select('id, message, read, created_at, link_leave_request_id, target_route')
     .eq('user_id', currentEmployeeId)
     .order('created_at', { ascending: false })
     .limit(20);
@@ -66,7 +66,7 @@ async function renderDropdown() {
   }
 
   dropdown.innerHTML = data.map(n => `
-    <div class="notif-item ${n.read ? '' : 'unread'}" data-id="${n.id}" data-link="${n.link_leave_request_id || ''}">
+    <div class="notif-item ${n.read ? '' : 'unread'}" data-id="${n.id}" data-route="${n.target_route || 'my-leave'}">
       <div>${escapeHtml(n.message)}</div>
       <div class="notif-date">${formatDate(n.created_at.slice(0, 10))}</div>
     </div>
@@ -75,10 +75,11 @@ async function renderDropdown() {
   dropdown.querySelectorAll('.notif-item').forEach(item => {
     item.addEventListener('click', async () => {
       const id = item.dataset.id;
+      const route = item.dataset.route || 'my-leave';
       await supabase.from('notifications').update({ read: true }).eq('id', id);
       dropdown.hidden = true;
       refreshBadge();
-      if (onNavigateToMyLeave) onNavigateToMyLeave();
+      if (onNavigate) onNavigate(route);
     });
   });
 }
