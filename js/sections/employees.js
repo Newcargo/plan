@@ -8,6 +8,7 @@ import { invokeAdminUsers } from '../adminUsers.js';
 export async function renderEmployees(container, context) {
   const canEdit = !!(context && context.permissions && context.permissions.employees && context.permissions.employees.edit);
   const isAdmin = !!(context && context.roles && context.roles.has('admin'));
+  const currentAdminId = context && context.employee && context.employee.id;
   const sortState = createSortState('full_name', true);
 
   container.innerHTML = `
@@ -237,6 +238,15 @@ export async function renderEmployees(container, context) {
   function openBackfillModal(emp) {
     const bodyHtml = `
       <p style="font-size:0.85rem; color:var(--text-muted); margin-top:-0.25rem;">${t('employees.backfillHint').replace('{name}', escapeHtml(emp.full_name))}</p>
+
+      <div class="field" style="margin-bottom:0.75rem;">
+        <label>${t('employees.backfillType')}</label>
+        <div style="display:flex; gap:1.2rem; margin-top:0.3rem;">
+          <label style="font-weight:400;"><input type="radio" name="bf-type" value="urlaub" checked> ${t('approvals.typeUrlaub')}</label>
+          <label style="font-weight:400;"><input type="radio" name="bf-type" value="krankheit"> ${t('myLeave.sickBadge')}</label>
+        </div>
+      </div>
+
       <div class="form-grid">
         <label>${t('myLeave.start')} – ${t('myLeave.end')}</label>
         <div class="date-range-inline">
@@ -251,6 +261,17 @@ export async function renderEmployees(container, context) {
           <option value="nachmittag">${t('myLeave.dayPortion.nachmittag')}</option>
         </select>
       </div>
+
+      <div class="field" id="bf-status-field" style="margin-top:0.5rem;">
+        <label>${t('employees.backfillStatus')}</label>
+        <div style="display:flex; flex-direction:column; gap:0.4rem; margin-top:0.3rem;">
+          <label style="font-weight:400;"><input type="radio" name="bf-status" value="beantragt"> ${t('myLeave.status.beantragt')}</label>
+          <label style="font-weight:400;"><input type="radio" name="bf-status" value="genehmigt_projekt"> ${t('myLeave.status.genehmigt_projekt')}</label>
+          <label style="font-weight:400;"><input type="radio" name="bf-status" value="final_gebucht" checked> ${t('myLeave.status.final_gebucht')}</label>
+          <label style="font-weight:400;"><input type="radio" name="bf-status" value="abgelehnt"> ${t('myLeave.status.abgelehnt')}</label>
+        </div>
+      </div>
+
       <p id="bf-error" class="error-text" hidden></p>
     `;
     const modal = openFormModal({ title: t('employees.backfillLeave'), bodyHtml, submitLabel: t('employees.backfillSubmit'), cancelLabel: t('common.cancel') });
@@ -258,6 +279,13 @@ export async function renderEmployees(container, context) {
     const startInput = modal.body.querySelector('#bf-start');
     const endInput = modal.body.querySelector('#bf-end');
     startInput.addEventListener('change', () => { if (!endInput.value || endInput.value < startInput.value) endInput.value = startInput.value; });
+
+    const statusField = modal.body.querySelector('#bf-status-field');
+    modal.body.querySelectorAll('input[name="bf-type"]').forEach(radio => {
+      radio.addEventListener('change', () => {
+        statusField.hidden = radio.value === 'krankheit' && radio.checked;
+      });
+    });
 
     modal.submitBtn.addEventListener('click', async () => {
       const errorEl = modal.body.querySelector('#bf-error');
@@ -269,14 +297,24 @@ export async function renderEmployees(container, context) {
         errorEl.hidden = false;
         return;
       }
-      const { error } = await supabase.from('leave_requests').insert({
+
+      const absenceType = modal.body.querySelector('input[name="bf-type"]:checked').value;
+      const status = absenceType === 'krankheit' ? 'final_gebucht' : modal.body.querySelector('input[name="bf-status"]:checked').value;
+
+      const payload = {
         employee_id: emp.id,
         start_date: start,
         end_date: end,
         day_portion: modal.body.querySelector('#bf-portion').value,
-        absence_type: 'urlaub',
-        status: 'final_gebucht',
-      });
+        absence_type: absenceType,
+        status,
+      };
+      if (absenceType === 'urlaub' && status !== 'beantragt') {
+        payload.approved_by = currentAdminId;
+        payload.approved_at = new Date().toISOString();
+      }
+
+      const { error } = await supabase.from('leave_requests').insert(payload);
       if (error) { errorEl.textContent = error.message; errorEl.hidden = false; return; }
       modal.close();
     });

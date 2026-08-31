@@ -6,9 +6,25 @@
 //
 // Bei jeder Aenderung: APP_VERSION anpassen UND einen neuen Eintrag oben in CHANGELOG ergaenzen.
 
-export const APP_VERSION = '2.7.0';
+export const APP_VERSION = '2.8.0';
 
 export const CHANGELOG = [
+  {
+    version: '2.8.0',
+    date: '2026-08-25',
+    changes: {
+      de: [
+        'Nachtragen erweitert: jetzt auch Krankheit nachtragbar (Vergangenheit oder Zukunft, immer direkt final)',
+        'Bei Urlaub wählt Admin den Status jetzt selbst per Radiobutton (Beantragt, Genehmigt, Final gebucht, Abgelehnt) statt zwingend "Final gebucht"',
+        'Sowohl Urlaub als auch Krankheit lassen sich nachträglich für Zeiträume in der Vergangenheit ODER Zukunft eintragen',
+      ],
+      en: [
+        'Backfill extended: sick leave can now also be backfilled (past or future, always directly final)',
+        'For regular leave, Admin now picks the status via radio button (Submitted, Approved, Final booked, Rejected) instead of being forced to "Final booked"',
+        'Both leave and sick leave can be entered for periods in the past OR the future',
+      ],
+    },
+  },
   {
     version: '2.7.0',
     date: '2026-08-25',
