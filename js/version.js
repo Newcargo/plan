@@ -6,9 +6,23 @@
 //
 // Bei jeder Aenderung: APP_VERSION anpassen UND einen neuen Eintrag oben in CHANGELOG ergaenzen.
 
-export const APP_VERSION = '2.6.1';
+export const APP_VERSION = '2.7.0';
 
 export const CHANGELOG = [
+  {
+    version: '2.7.0',
+    date: '2026-08-25',
+    changes: {
+      de: [
+        'Neu: Admin kann rückwirkend Urlaub für andere Mitarbeitende nachtragen ("Urlaub nachtragen"-Button bei jeder Person unter "Mitarbeiter") - landet sofort als "Final gebucht", kein Genehmigungsprozess nötig, da bereits erfolgt',
+        'Bisher konnte niemand, auch Admin nicht, einen Antrag für eine andere Person erstellen - jetzt für genau diesen historischen Nachtragen-Fall freigegeben, alle anderen Regeln (jeder für sich selbst) bleiben unverändert',
+      ],
+      en: [
+        'New: Admin can retroactively backfill leave for other employees ("Backfill leave" button on each person under "Employees") - lands immediately as "Final booked", no approval process needed since it already happened',
+        'Previously nobody, not even Admin, could create a request on behalf of someone else - now enabled specifically for this historical-backfill case, all other rules (everyone for themselves) remain unchanged',
+      ],
+    },
+  },
   {
     version: '2.6.1',
     date: '2026-08-25',

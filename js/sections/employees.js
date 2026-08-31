@@ -7,6 +7,7 @@ import { invokeAdminUsers } from '../adminUsers.js';
 
 export async function renderEmployees(container, context) {
   const canEdit = !!(context && context.permissions && context.permissions.employees && context.permissions.employees.edit);
+  const isAdmin = !!(context && context.roles && context.roles.has('admin'));
   const sortState = createSortState('full_name', true);
 
   container.innerHTML = `
@@ -175,6 +176,7 @@ export async function renderEmployees(container, context) {
             ? `<span class="badge badge-success">${t('employees.hasLogin')}</span>`
             : `<span class="badge badge-muted">${t('employees.noLogin')}</span>`}</td>
           <td class="row-actions">
+            ${isAdmin ? `<button type="button" class="btn btn-secondary backfill-btn">${t('employees.backfillLeave')}</button>` : ''}
             ${canEdit ? iconButton(ICON_EDIT, t('common.edit'), 'edit-btn') : ''}
             ${canEdit ? iconButton(ICON_DELETE, t('common.delete'), 'delete-btn') : ''}
           </td>
@@ -186,6 +188,13 @@ export async function renderEmployees(container, context) {
       btn.addEventListener('click', () => {
         const id = btn.closest('tr').dataset.id;
         openEdit(empsData.find(e => e.id === id));
+      });
+    });
+
+    tbody.querySelectorAll('.backfill-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.closest('tr').dataset.id;
+        openBackfillModal(empsData.find(e => e.id === id));
       });
     });
 
@@ -223,6 +232,54 @@ export async function renderEmployees(container, context) {
     return String(str).replace(/[&<>"']/g, s => ({
       '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
     }[s]));
+  }
+
+  function openBackfillModal(emp) {
+    const bodyHtml = `
+      <p style="font-size:0.85rem; color:var(--text-muted); margin-top:-0.25rem;">${t('employees.backfillHint').replace('{name}', escapeHtml(emp.full_name))}</p>
+      <div class="form-grid">
+        <label>${t('myLeave.start')} – ${t('myLeave.end')}</label>
+        <div class="date-range-inline">
+          <input type="date" id="bf-start" required>
+          <span>–</span>
+          <input type="date" id="bf-end" required>
+        </div>
+        <label>${t('myLeave.dayPortion')}</label>
+        <select id="bf-portion">
+          <option value="ganztag">${t('myLeave.dayPortion.ganztag')}</option>
+          <option value="vormittag">${t('myLeave.dayPortion.vormittag')}</option>
+          <option value="nachmittag">${t('myLeave.dayPortion.nachmittag')}</option>
+        </select>
+      </div>
+      <p id="bf-error" class="error-text" hidden></p>
+    `;
+    const modal = openFormModal({ title: t('employees.backfillLeave'), bodyHtml, submitLabel: t('employees.backfillSubmit'), cancelLabel: t('common.cancel') });
+
+    const startInput = modal.body.querySelector('#bf-start');
+    const endInput = modal.body.querySelector('#bf-end');
+    startInput.addEventListener('change', () => { if (!endInput.value || endInput.value < startInput.value) endInput.value = startInput.value; });
+
+    modal.submitBtn.addEventListener('click', async () => {
+      const errorEl = modal.body.querySelector('#bf-error');
+      errorEl.hidden = true;
+      const start = startInput.value;
+      const end = endInput.value;
+      if (!start || !end || start > end) {
+        errorEl.textContent = t('myLeave.dateOrderError');
+        errorEl.hidden = false;
+        return;
+      }
+      const { error } = await supabase.from('leave_requests').insert({
+        employee_id: emp.id,
+        start_date: start,
+        end_date: end,
+        day_portion: modal.body.querySelector('#bf-portion').value,
+        absence_type: 'urlaub',
+        status: 'final_gebucht',
+      });
+      if (error) { errorEl.textContent = error.message; errorEl.hidden = false; return; }
+      modal.close();
+    });
   }
 
   loadEmployees();
