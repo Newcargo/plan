@@ -6,9 +6,31 @@
 //
 // Bei jeder Aenderung: APP_VERSION anpassen UND einen neuen Eintrag oben in CHANGELOG ergaenzen.
 
-export const APP_VERSION = '2.8.0';
+export const APP_VERSION = '2.9.0';
 
 export const CHANGELOG = [
+  {
+    version: '2.9.0',
+    date: '2026-08-25',
+    changes: {
+      de: [
+        'Neu: Eintritts- und Austrittsdatum bei Mitarbeitenden statt manuellem "Aktiv"-Häkchen - Status wird jetzt live aus den Daten berechnet, immer korrekt ohne manuelle Pflege',
+        'Login wird automatisch ab dem Tag nach dem Austrittsdatum gesperrt, ab dem Eintrittsdatum automatisch freigeschaltet',
+        'Kapazitätsberechnung berücksichtigt jetzt Austritte: liegt das Austrittsdatum mitten in einem Sprint, zählt die Kapazität für diesen Sprint als 0',
+        'Kapazitätsberechnung berücksichtigt jetzt Eintritte mit Einarbeitungs-Rampe: 1. Sprint 0%, 2. Sprint 20%, 3. Sprint 40% usw. bis 100% ab dem 6. Sprint',
+        'Team-Kalender zeigt ausgetretene Mitarbeitende jetzt weiterhin korrekt in vergangenen Monaten (vorher verschwanden sie sofort auch aus der Historie)',
+        'Alle Daten bleiben bei einem Austritt erhalten - nichts wird gelöscht, nur die Sichtbarkeit passt sich automatisch an',
+      ],
+      en: [
+        'New: start and end date for employees instead of a manual "Active" checkbox - status is now computed live from the dates, always correct without manual upkeep',
+        'Login is automatically blocked from the day after the end date, and automatically enabled from the start date',
+        'Capacity calculation now accounts for departures: if the end date falls in the middle of a sprint, capacity for that sprint counts as 0',
+        'Capacity calculation now accounts for new hires with an onboarding ramp: 1st sprint 0%, 2nd sprint 20%, 3rd sprint 40%, and so on up to 100% from the 6th sprint',
+        'Team calendar now correctly keeps showing departed employees in past months (previously they vanished immediately, even from history)',
+        'No data is lost on departure - nothing gets deleted, only visibility adjusts automatically',
+      ],
+    },
+  },
   {
     version: '2.8.0',
     date: '2026-08-25',

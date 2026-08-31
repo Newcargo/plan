@@ -4,6 +4,7 @@ import { ICON_EDIT, ICON_DELETE, iconButton, fieldLabel } from '../icons.js';
 import { createSortState, sortableHeader, wireSortHeaders, sortArray } from '../sortable.js';
 import { openFormModal, showConfirmModal } from '../modal.js';
 import { invokeAdminUsers } from '../adminUsers.js';
+import { todayISO } from '../dateFormat.js';
 
 export async function renderEmployees(container, context) {
   const canEdit = !!(context && context.permissions && context.permissions.employees && context.permissions.employees.edit);
@@ -82,8 +83,11 @@ export async function renderEmployees(container, context) {
         ${fieldLabel(t('employees.isExternal'), 'Mitarbeiter ohne Fiori-SAP-Zugang. Ihr Urlaub-Genehmigungsprozess läuft über den People Pool Manager statt über Fiori-SAP.')}
         <input type="checkbox" id="mf-external" ${emp && emp.is_external ? 'checked' : ''}>
 
-        ${fieldLabel(t('employees.active'), 'Inaktive Mitarbeiter erscheinen nicht mehr im Team-Kalender und können sich nicht mehr einloggen. Für Personen, die die Firma verlassen haben.')}
-        <input type="checkbox" id="mf-active" ${!emp || emp.active ? 'checked' : ''}>
+        ${fieldLabel(t('employees.startDate'), 'Eintrittsdatum. Beeinflusst die Kapazitätsberechnung (Einarbeitungs-Rampe: 1. Sprint 0%, 2. Sprint 20%, ... bis 100%). Leer lassen bei bereits bestehenden Mitarbeitenden ohne Rampe.')}
+        <input type="date" id="mf-start-date" value="${emp && emp.start_date ? emp.start_date : ''}">
+
+        ${fieldLabel(t('employees.endDate'), 'Austrittsdatum. Ab dem Folgetag kein Login mehr möglich. Liegt es mitten in einem Sprint, zählt die Kapazität für diesen Sprint als 0.')}
+        <input type="date" id="mf-end-date" value="${emp && emp.end_date ? emp.end_date : ''}">
       </div>
     `;
   }
@@ -103,7 +107,8 @@ export async function renderEmployees(container, context) {
       individual_factor: indivFactor || null,
       individual_factor_note: indivFactor ? indivNote : null,
       is_external: modal.body.querySelector('#mf-external').checked,
-      active: modal.body.querySelector('#mf-active').checked,
+      start_date: modal.body.querySelector('#mf-start-date').value || null,
+      end_date: modal.body.querySelector('#mf-end-date').value || null,
     };
     // E-Mail nur setzen, solange noch kein App-Zugang besteht (sonst laeuft das ueber
     // "Rollen & Zugriff", damit Login und Stammdaten synchron bleiben)
@@ -143,7 +148,7 @@ export async function renderEmployees(container, context) {
     const tbody = document.getElementById('emp-tbody');
     const { data: emps, error } = await supabase
       .from('employees')
-      .select('id, full_name, email, team_id, employment_pct, focus_factor_override, individual_factor, individual_factor_note, is_external, active, auth_user_id');
+      .select('id, full_name, email, team_id, employment_pct, focus_factor_override, individual_factor, individual_factor_note, is_external, start_date, end_date, auth_user_id');
 
     if (error) { tbody.innerHTML = `<tr><td colspan="8" class="empty-state">${t('common.error')}</td></tr>`; return; }
 
@@ -163,16 +168,22 @@ export async function renderEmployees(container, context) {
     tbody.innerHTML = empsData.map(emp => {
       const eff = reductionMap.get(emp.id);
       const effPct = eff !== undefined ? Math.round(Number(eff) * 100) + '%' : '–';
+      const today = todayISO();
+      const notYetStarted = emp.start_date && emp.start_date > today;
+      const alreadyLeft = emp.end_date && emp.end_date < today;
+      const isActiveNow = !notYetStarted && !alreadyLeft;
+      let statusBadge;
+      if (notYetStarted) statusBadge = `<span class="badge badge-info">${t('employees.notYetStarted')}</span>`;
+      else if (alreadyLeft) statusBadge = `<span class="badge badge-muted">${t('employees.leftCompany')}</span>`;
+      else statusBadge = `<span class="badge badge-success">${t('employees.active')}</span>`;
       return `
-        <tr data-id="${emp.id}" class="${!emp.active ? 'row-past' : ''}">
+        <tr data-id="${emp.id}" class="${!isActiveNow ? 'row-past' : ''}">
           <td>${escapeHtml(emp.full_name)}${emp.is_external ? ` <span class="badge badge-muted">extern</span>` : ''}</td>
           <td>${emp.email ? escapeHtml(emp.email) : '–'}</td>
           <td>${escapeHtml(emp.team_name || '–')}</td>
           <td class="num mono">${Number(emp.employment_pct).toFixed(2)}</td>
           <td class="num mono">${effPct}</td>
-          <td>${emp.active
-            ? `<span class="badge badge-success">${t('employees.active')}</span>`
-            : `<span class="badge badge-muted">${t('employees.inactive')}</span>`}</td>
+          <td>${statusBadge}</td>
           <td>${emp.auth_user_id
             ? `<span class="badge badge-success">${t('employees.hasLogin')}</span>`
             : `<span class="badge badge-muted">${t('employees.noLogin')}</span>`}</td>
@@ -215,7 +226,7 @@ export async function renderEmployees(container, context) {
               cancelLabel: t('common.cancel'),
             });
             if (wantsDeactivate) {
-              const { error: deactErr } = await supabase.from('employees').update({ active: false }).eq('id', id);
+              const { error: deactErr } = await supabase.from('employees').update({ end_date: todayISO() }).eq('id', id);
               if (deactErr) { alert(t('common.error') + '\n' + deactErr.message); return; }
               loadEmployees();
             }

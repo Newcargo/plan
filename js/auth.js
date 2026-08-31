@@ -1,4 +1,5 @@
 import { supabase } from './supabaseClient.js';
+import { todayISO } from './dateFormat.js';
 
 // Status-Werte:
 // 'ok'       -> employee + roles (Set) zurueckgegeben, Zugriff erlaubt (unabhaengig von Rolle)
@@ -10,13 +11,16 @@ export async function checkAccess() {
 
   const { data: employee, error: empErr } = await supabase
     .from('employees')
-    .select('id, full_name, email, auth_user_id, is_blocked, active, must_change_password')
+    .select('id, full_name, email, auth_user_id, is_blocked, start_date, end_date, must_change_password')
     .eq('auth_user_id', user.id)
     .maybeSingle();
 
   if (empErr || !employee) return { status: 'none' };
 
-  if (employee.is_blocked || employee.active === false) {
+  const today = todayISO();
+  const isActiveNow = (!employee.start_date || employee.start_date <= today) && (!employee.end_date || employee.end_date >= today);
+
+  if (employee.is_blocked || !isActiveNow) {
     const { data: cfg } = await supabase.from('app_config').select('value').eq('key', 'blocked_contact_name').maybeSingle();
     const contactName = (cfg && cfg.value) ? cfg.value : 'Admin';
     return { status: 'blocked', contactName };

@@ -135,7 +135,9 @@ export async function renderTeamCalendar(container, context) {
 
     const [teamsRes, employeesRes, leaveRes, holidaysRes, blockedRes, sprintsRes, pisRes, emailCfgRes] = await Promise.all([
       supabase.from('teams').select('id, name').order('name'),
-      supabase.from('employees').select('id, full_name, team_id').eq('active', true),
+      supabase.from('employees').select('id, full_name, team_id, start_date, end_date')
+        .or(`start_date.is.null,start_date.lte.${monthEndISO}`)
+        .or(`end_date.is.null,end_date.gte.${monthStartISO}`),
       supabase.from('v_leave_calendar').select('id, employee_id, start_date, end_date, status, day_portion, absence_type').lte('start_date', monthEndISO).gte('end_date', monthStartISO),
       supabase.from('holidays').select('date, name, note').gte('date', monthStartISO).lte('date', monthEndISO),
       supabase.from('blocked_periods').select('start_date, end_date, label').lte('start_date', monthEndISO).gte('end_date', monthStartISO),
