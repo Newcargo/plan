@@ -118,7 +118,17 @@ export async function renderTeamCalendar(container, context) {
 
   function holidayText(holiday) {
     if (!holiday) return '';
-    return holiday.note ? `${holiday.name} - ${holiday.note}` : holiday.name;
+    const base = holiday.note ? `${holiday.name} - ${holiday.note}` : holiday.name;
+    return holiday.day_portion && holiday.day_portion !== 'ganztag'
+      ? `${base} (${t('myLeave.dayPortion.' + holiday.day_portion)})`
+      : base;
+  }
+
+  function blockedText(blocked) {
+    if (!blocked) return '';
+    return blocked.day_portion && blocked.day_portion !== 'ganztag'
+      ? `${blocked.label} (${t('myLeave.dayPortion.' + blocked.day_portion)})`
+      : blocked.label;
   }
 
   async function load() {
@@ -139,8 +149,8 @@ export async function renderTeamCalendar(container, context) {
         .or(`start_date.is.null,start_date.lte.${monthEndISO}`)
         .or(`end_date.is.null,end_date.gte.${monthStartISO}`),
       supabase.from('v_leave_calendar').select('id, employee_id, start_date, end_date, status, day_portion, absence_type').lte('start_date', monthEndISO).gte('end_date', monthStartISO),
-      supabase.from('holidays').select('date, name, note').gte('date', monthStartISO).lte('date', monthEndISO),
-      supabase.from('blocked_periods').select('start_date, end_date, label').lte('start_date', monthEndISO).gte('end_date', monthStartISO),
+      supabase.from('holidays').select('date, name, note, day_portion').gte('date', monthStartISO).lte('date', monthEndISO),
+      supabase.from('blocked_periods').select('start_date, end_date, label, day_portion').lte('start_date', monthEndISO).gte('end_date', monthStartISO),
       supabase.from('sprints').select('id, pi_id, sprint_number, name, start_date, end_date').lte('start_date', monthEndISO).gte('end_date', monthStartISO),
       supabase.from('program_increments').select('id, name'),
       supabase.from('app_config').select('value').eq('key', 'email_notifications_enabled').maybeSingle(),
@@ -182,8 +192,8 @@ export async function renderTeamCalendar(container, context) {
         dayNum: d,
         weekday: dt.getDay(),
         isWeekend: dt.getDay() === 0 || dt.getDay() === 6,
-        holiday: holiday ? { name: holiday.name, note: holiday.note } : null,
-        blocked: blockedHit ? blockedHit.label : null,
+        holiday: holiday ? { name: holiday.name, note: holiday.note, day_portion: holiday.day_portion } : null,
+        blocked: blockedHit ? { label: blockedHit.label, day_portion: blockedHit.day_portion } : null,
         sprint: sprintHit || null,
       });
     }
@@ -231,7 +241,7 @@ export async function renderTeamCalendar(container, context) {
       <tr>
         <th class="cal-name-col">${t('employees.fullName')}</th>
         <th class="cal-team-col">${t('employees.team')}</th>
-        ${dayInfo.map(di => `<th class="cal-day-col${di.isWeekend ? ' weekend' : ''}${di.date === currentTodayISO ? ' today' : ''}" title="${di.holiday ? escapeHtml(holidayText(di.holiday)) : ''}${di.blocked ? ' ' + escapeHtml(di.blocked) : ''}">${di.dayNum}<br>${wd[di.weekday]}</th>`).join('')}
+        ${dayInfo.map(di => `<th class="cal-day-col${di.isWeekend ? ' weekend' : ''}${di.date === currentTodayISO ? ' today' : ''}" title="${di.holiday ? escapeHtml(holidayText(di.holiday)) : ''}${di.blocked ? ' ' + escapeHtml(blockedText(di.blocked)) : ''}">${di.dayNum}<br>${wd[di.weekday]}</th>`).join('')}
       </tr>
     </thead>`;
 
@@ -254,9 +264,29 @@ export async function renderTeamCalendar(container, context) {
             // (Sperrzeit/Feiertag/Wochenende), gilt fuer Ganztag genauso wie fuer die freie Haelfte
             let contextBg = '';
             let contextTitle = '';
-            if (di.blocked) { contextBg = '#FBE7EA'; contextTitle = di.blocked; }
+            if (di.blocked) { contextBg = '#FBE7EA'; contextTitle = blockedText(di.blocked); }
             else if (di.holiday) { contextBg = '#E6E0F8'; contextTitle = holidayText(di.holiday); }
             else if (di.isWeekend) { contextBg = WEEKEND_BG; }
+
+            if (!leave && di.blocked && di.blocked.day_portion !== 'ganztag') {
+              const topIsBlocked = di.blocked.day_portion === 'vormittag';
+              const blockedStyle = 'background:#FBE7EA;';
+              const blockedTitle = blockedText(di.blocked);
+              return `<td class="cal-cell cal-cell-split" title="${escapeHtml(blockedTitle)}">
+                <div class="cal-cell-half" style="${topIsBlocked ? blockedStyle : ''}"></div>
+                <div class="cal-cell-half" style="${!topIsBlocked ? blockedStyle : ''}"></div>
+              </td>`;
+            }
+
+            if (!leave && di.holiday && di.holiday.day_portion !== 'ganztag') {
+              const topIsHoliday = di.holiday.day_portion === 'vormittag';
+              const holidayStyle = 'background:#E6E0F8;';
+              const holidayTitle = holidayText(di.holiday);
+              return `<td class="cal-cell cal-cell-split" title="${escapeHtml(holidayTitle)}">
+                <div class="cal-cell-half" style="${topIsHoliday ? holidayStyle : ''}"></div>
+                <div class="cal-cell-half" style="${!topIsHoliday ? holidayStyle : ''}"></div>
+              </td>`;
+            }
 
             if (statusKey && STATUS_COLORS[statusKey] && portion !== 'ganztag') {
               const meta = STATUS_COLORS[statusKey];

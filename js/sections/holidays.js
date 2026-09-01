@@ -29,6 +29,13 @@ export async function renderHolidays(container, context) {
         <label>${t('holidays.name')}</label>
         <input type="text" id="mf-name" required value="${h ? escapeHtml(h.name) : ''}">
 
+        ${fieldLabel(t('myLeave.dayPortion'), 'Ganztag zieht einen vollen Werktag von der Kapazität ab, Vormittag/Nachmittag nur einen halben.')}
+        <select id="mf-portion">
+          <option value="ganztag" ${!h || h.day_portion === 'ganztag' ? 'selected' : ''}>${t('myLeave.dayPortion.ganztag')}</option>
+          <option value="vormittag" ${h && h.day_portion === 'vormittag' ? 'selected' : ''}>${t('myLeave.dayPortion.vormittag')}</option>
+          <option value="nachmittag" ${h && h.day_portion === 'nachmittag' ? 'selected' : ''}>${t('myLeave.dayPortion.nachmittag')}</option>
+        </select>
+
         ${fieldLabel(t('holidays.note'), 'Optionale Zusatzinfo, z. B. "Fällt auf einen Samstag".')}
         <input type="text" id="mf-note" value="${h && h.note ? escapeHtml(h.note) : ''}">
       </div>
@@ -41,6 +48,7 @@ export async function renderHolidays(container, context) {
       const payload = {
         date: modal.body.querySelector('#mf-date').value,
         name: modal.body.querySelector('#mf-name').value.trim(),
+        day_portion: modal.body.querySelector('#mf-portion').value,
         note: modal.body.querySelector('#mf-note').value.trim() || null,
       };
       const { error } = await supabase.from('holidays').insert(payload);
@@ -57,6 +65,7 @@ export async function renderHolidays(container, context) {
       const payload = {
         date: modal.body.querySelector('#mf-date').value,
         name: modal.body.querySelector('#mf-name').value.trim(),
+        day_portion: modal.body.querySelector('#mf-portion').value,
         note: modal.body.querySelector('#mf-note').value.trim() || null,
       };
       const { error } = await supabase.from('holidays').update(payload).eq('id', h.id);
@@ -106,7 +115,7 @@ export async function renderHolidays(container, context) {
                 ${items.map(h => `
                   <tr data-id="${h.id}" class="${h.date < today ? 'row-past' : ''}">
                     <td class="mono">${formatDate(h.date)}</td>
-                    <td>${escapeHtml(h.name)}</td>
+                    <td>${escapeHtml(h.name)}${h.day_portion !== 'ganztag' ? ` <span class="badge badge-info">${t('myLeave.dayPortion.' + h.day_portion)}</span>` : ''}</td>
                     <td>${escapeHtml(h.note || '')}</td>
                     <td class="row-actions">
                       ${canEdit ? iconButton(ICON_EDIT, t('common.edit'), 'edit-btn') : ''}

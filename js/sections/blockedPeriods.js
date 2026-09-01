@@ -33,7 +33,14 @@ export async function renderBlocked(container, context) {
         ${fieldLabel(t('blocked.label'), 'Grund der Sperrzeit, z. B. "Betriebsferien" oder "Wartungsfenster".')}
         <input type="text" id="mf-label" required value="${bp ? escapeHtml(bp.label) : ''}">
 
-        ${fieldLabel(t('blocked.capacityImpact'), 'Aktiv: wirkt wie eine Firmenschliessung und wird von der verfügbaren Kapazität abgezogen. Inaktiv: dient nur als Genehmigungshinweis im Urlaubskalender, ohne die Kapazität zu verändern.')}
+        ${fieldLabel(t('myLeave.dayPortion'), 'Gilt für jeden Tag im Zeitraum. Ganztag zieht einen vollen Werktag von der Kapazität ab, Vormittag/Nachmittag nur einen halben (nur relevant, wenn "Kapazitäts-Auswirkung" aktiv ist).')}
+        <select id="mf-portion">
+          <option value="ganztag" ${!bp || bp.day_portion === 'ganztag' ? 'selected' : ''}>${t('myLeave.dayPortion.ganztag')}</option>
+          <option value="vormittag" ${bp && bp.day_portion === 'vormittag' ? 'selected' : ''}>${t('myLeave.dayPortion.vormittag')}</option>
+          <option value="nachmittag" ${bp && bp.day_portion === 'nachmittag' ? 'selected' : ''}>${t('myLeave.dayPortion.nachmittag')}</option>
+        </select>
+
+        ${fieldLabel(t('blocked.capacityImpact'), 'Aktiv: wird von der verfügbaren Kapazität abgezogen (Ganztag/Vormittag/Nachmittag je nach Auswahl oben). Urlaub während dieser Zeit zählt trotzdem voll, oben drauf. Inaktiv: dient nur als Genehmigungshinweis im Urlaubskalender, ohne die Kapazität zu verändern.')}
         <input type="checkbox" id="mf-impact" ${!bp || bp.capacity_impact ? 'checked' : ''}>
       </div>
     `;
@@ -53,6 +60,7 @@ export async function renderBlocked(container, context) {
         start_date: modal.body.querySelector('#mf-start').value,
         end_date: modal.body.querySelector('#mf-end').value,
         label: modal.body.querySelector('#mf-label').value.trim(),
+        day_portion: modal.body.querySelector('#mf-portion').value,
         capacity_impact: modal.body.querySelector('#mf-impact').checked,
       };
       const { error } = await supabase.from('blocked_periods').insert(payload);
@@ -71,6 +79,7 @@ export async function renderBlocked(container, context) {
         start_date: modal.body.querySelector('#mf-start').value,
         end_date: modal.body.querySelector('#mf-end').value,
         label: modal.body.querySelector('#mf-label').value.trim(),
+        day_portion: modal.body.querySelector('#mf-portion').value,
         capacity_impact: modal.body.querySelector('#mf-impact').checked,
       };
       const { error } = await supabase.from('blocked_periods').update(payload).eq('id', bp.id);
@@ -123,7 +132,7 @@ export async function renderBlocked(container, context) {
                   <tr data-id="${bp.id}" class="${bp.end_date < today ? 'row-past' : ''}">
                     <td class="mono">${formatDate(bp.start_date)}</td>
                     <td class="mono">${formatDate(bp.end_date)}</td>
-                    <td>${escapeHtml(bp.label)}</td>
+                    <td>${escapeHtml(bp.label)}${bp.day_portion !== 'ganztag' ? ` <span class="badge badge-info">${t('myLeave.dayPortion.' + bp.day_portion)}</span>` : ''}</td>
                     <td>${bp.capacity_impact
                       ? `<span class="badge badge-danger">ja</span>`
                       : `<span class="badge badge-muted">nein</span>`}</td>

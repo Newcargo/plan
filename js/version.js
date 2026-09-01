@@ -6,9 +6,49 @@
 //
 // Bei jeder Aenderung: APP_VERSION anpassen UND einen neuen Eintrag oben in CHANGELOG ergaenzen.
 
-export const APP_VERSION = '2.13.0';
+export const APP_VERSION = '2.15.0';
 
 export const CHANGELOG = [
+  {
+    version: '2.15.0',
+    date: '2026-08-25',
+    changes: {
+      de: [
+        'Sperrzeiten können jetzt ebenfalls Ganztag, Vormittag oder Nachmittag sein - gilt für jeden Tag im Zeitraum gleich',
+        'Wichtiger Fund dabei: "Kapazitäts-Auswirkung" bei Sperrzeiten war bisher totes Feld ohne jede Wirkung - fliesst jetzt erstmals wirklich in die Kapazitätsberechnung ein',
+        'Bewusst anders als bei Feiertagen: Urlaub während einer Sperrzeit zählt weiterhin voll (nicht zusammengezogen), da "reduzierte Kapazität" nicht "niemand arbeitet" bedeutet',
+        'Team-Kalender zeigt Halbtags-Sperrzeiten jetzt als geteilte Zelle',
+        '"Sperrzeiten": neues Auswahlfeld Ganztag/Vormittag/Nachmittag, Halbtags-Sperrzeiten mit Kennzeichnung in der Liste',
+      ],
+      en: [
+        'Blocked periods can now also be full day, morning, or afternoon - applies equally to every day in the range',
+        'Important finding along the way: "capacity impact" on blocked periods was previously a dead field with no effect at all - now genuinely factored into capacity calculation for the first time',
+        'Deliberately different from holidays: leave taken during a blocked period still counts in full (not reduced), since "reduced capacity" does not mean "nobody is working"',
+        'Team calendar now shows half-day blocked periods as a split cell',
+        '"Blocked periods": new full day/morning/afternoon selector, half-day blocked periods marked in the list',
+      ],
+    },
+  },
+  {
+    version: '2.14.0',
+    date: '2026-08-25',
+    changes: {
+      de: [
+        'Neu: Feiertage können jetzt Ganztag, Vormittag oder Nachmittag sein - wie beim Urlaub',
+        'Kapazitätsberechnung zieht bei einem Halbtags-Feiertag nur noch 0.5 statt 1 vollen Tag ab',
+        'Ganztägiger Urlaub an einem Halbtags-Feiertag verbraucht nur noch 0.5 Tage, da der freie Teil des Tages ohnehin schon feiertagsbedingt frei gewesen wäre',
+        'Team-Kalender zeigt Halbtags-Feiertage jetzt als geteilte Zelle (analog zu Halbtags-Urlaub)',
+        '"Feiertage": neues Auswahlfeld Ganztag/Vormittag/Nachmittag, Halbtags-Feiertage mit Kennzeichnung in der Liste',
+      ],
+      en: [
+        'New: holidays can now be full day, morning, or afternoon - just like leave',
+        'Capacity calculation now only subtracts 0.5 instead of a full day for a half-day holiday',
+        'Full-day leave on a half-day holiday now only consumes 0.5 days, since the free part of the day would already have been off due to the holiday',
+        'Team calendar now shows half-day holidays as a split cell (matching half-day leave)',
+        '"Holidays": new full day/morning/afternoon selector, half-day holidays marked in the list',
+      ],
+    },
+  },
   {
     version: '2.13.0',
     date: '2026-08-25',
