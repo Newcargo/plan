@@ -32,19 +32,19 @@ export async function renderSettings(container) {
     <div class="card">
       <div class="form-panel-title">${t('settings.matrixTitle')}</div>
       <p style="font-size:0.82rem; color:var(--text-muted); margin:-0.25rem 0 0.9rem;">${t('settings.matrixHint')}</p>
-      <table>
+      <table style="table-layout:fixed;">
         <thead>
           <tr>
-            <th rowspan="2">${t('settings.matrixArea')}</th>
-            <th colspan="2" class="num">${t('roles.mitarbeiter')}</th>
-            <th colspan="2" class="num">${t('roles.stufe2_genehmiger')}</th>
-            <th colspan="2" class="num">${t('roles.people_pool_manager')}</th>
-            <th class="num" rowspan="2">${t('roles.admin')}</th>
+            <th rowspan="2" style="width:170px;">${t('settings.matrixArea')}</th>
+            <th colspan="2" class="center">${t('roles.mitarbeiter')}</th>
+            <th colspan="2" class="center">${t('roles.stufe2_genehmiger')}</th>
+            <th colspan="2" class="center">${t('roles.people_pool_manager')}</th>
+            <th class="center" rowspan="2" style="width:90px;">${t('roles.admin')}</th>
           </tr>
           <tr>
-            <th class="num">${t('settings.mxView')}</th><th class="num">${t('settings.mxEdit')}</th>
-            <th class="num">${t('settings.mxView')}</th><th class="num">${t('settings.mxEdit')}</th>
-            <th class="num">${t('settings.mxView')}</th><th class="num">${t('settings.mxEdit')}</th>
+            <th class="center" style="width:90px;">${t('settings.mxView')}</th><th class="center" style="width:90px;">${t('settings.mxEdit')}</th>
+            <th class="center" style="width:90px;">${t('settings.mxView')}</th><th class="center" style="width:90px;">${t('settings.mxEdit')}</th>
+            <th class="center" style="width:90px;">${t('settings.mxView')}</th><th class="center" style="width:90px;">${t('settings.mxEdit')}</th>
           </tr>
         </thead>
         <tbody id="matrix-tbody"><tr><td colspan="8" class="empty-state">${t('common.loading')}</td></tr></tbody>
@@ -130,11 +130,11 @@ export async function renderSettings(container) {
       const cells = MATRIX_ROLES.map(role => {
         const row = map.get(role + ':' + area) || { can_view: false, can_edit: false };
         return `
-          <td class="num"><input type="checkbox" class="mx-view" data-role="${role}" data-area="${area}" ${row.can_view ? 'checked' : ''}></td>
-          <td class="num"><input type="checkbox" class="mx-edit" data-role="${role}" data-area="${area}" ${row.can_edit ? 'checked' : ''}></td>
+          <td class="center"><input type="checkbox" class="mx-view" data-role="${role}" data-area="${area}" ${row.can_view ? 'checked' : ''}></td>
+          <td class="center"><input type="checkbox" class="mx-edit" data-role="${role}" data-area="${area}" ${row.can_edit ? 'checked' : ''}></td>
         `;
       }).join('');
-      return `<tr><td>${label}</td>${cells}<td class="num" style="color:var(--text-muted);">${t('settings.mxAlways')}</td></tr>`;
+      return `<tr><td>${label}</td>${cells}<td class="center" style="color:var(--text-muted);">${t('settings.mxAlways')}</td></tr>`;
     }).join('');
 
     // Bearbeiten setzt automatisch Sehen voraus - beide haengen zusammen, damit keine

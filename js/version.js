@@ -6,9 +6,21 @@
 //
 // Bei jeder Aenderung: APP_VERSION anpassen UND einen neuen Eintrag oben in CHANGELOG ergaenzen.
 
-export const APP_VERSION = '2.10.0';
+export const APP_VERSION = '2.10.1';
 
 export const CHANGELOG = [
+  {
+    version: '2.10.1',
+    date: '2026-08-25',
+    changes: {
+      de: [
+        'Berechtigungs-Matrix in Einstellungen optisch überarbeitet: Checkboxen und Kopfzeilen sind jetzt sauber zentriert (vorher versehentlich rechtsbündig ausgerichtet), Spalten haben feste, gleichmässige Breiten statt einer grossen Lücke vor "Admin"',
+      ],
+      en: [
+        'Permission matrix in Settings visually refined: checkboxes and headers are now properly centered (previously accidentally right-aligned), columns have fixed, even widths instead of a large gap before "Admin"',
+      ],
+    },
+  },
   {
     version: '2.10.0',
     date: '2026-08-25',
