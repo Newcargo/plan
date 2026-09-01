@@ -151,15 +151,21 @@ export async function renderDashboard(container) {
     if (!piSprints.length) { contentEl.innerHTML = `<p class="empty-state">${t('common.none')}</p>`; return; }
 
     const sprintIds = piSprints.map(s => s.id);
-    const [{ data: teams }, { data: snapshots, error: snapErr }] = await Promise.all([
+    const sprintPositions = [...new Set(piSprints.map(s => s.sprint_number))];
+    const [{ data: teams }, { data: snapshots, error: snapErr }, { data: bands }, { data: cfg }] = await Promise.all([
       supabase.from('teams').select('id, name').eq('tracks_capacity', true).order('name'),
       supabase
         .from('capacity_snapshots')
         .select('sprint_id, capacity_person_days, employees(team_id)')
         .in('sprint_id', sprintIds),
+      supabase.from('confidence_bands').select('sprint_position, lower_pct').in('sprint_position', sprintPositions),
+      supabase.from('app_config').select('value').eq('key', 'velocity_rolling_window').maybeSingle(),
     ]);
 
     if (snapErr) { contentEl.innerHTML = `<p class="empty-state">${t('common.error')}</p>`; return; }
+
+    const windowSize = (cfg && cfg.value) ? Number(cfg.value) : 3;
+    const bandByPosition = new Map((bands || []).map(b => [b.sprint_position, Number(b.lower_pct)]));
 
     const teamIdSet = new Set((teams || []).map(tm => tm.id));
     // matrix[teamId][sprintId] = capacity
@@ -176,6 +182,13 @@ export async function renderDashboard(container) {
 
     const teamMap = new Map((teams || []).map(tm => [tm.id, tm.name]));
 
+    // Velocity ist pro Team gleich (unabhaengig vom Sprint) - einmal pro Team abfragen,
+    // dann fuer jeden Sprint mit dessen eigenem Konfidenzband kombinieren.
+    const teamIds = [...matrix.keys()];
+    const velocities = await Promise.all(teamIds.map(id => supabase.rpc('get_team_velocity', { target_team_id: id, window_size: windowSize })));
+    const velocityByTeam = new Map();
+    teamIds.forEach((id, i) => velocityByTeam.set(id, velocities[i].data));
+
     contentEl.innerHTML = `
       <div class="card">
         <table>
@@ -186,13 +199,27 @@ export async function renderDashboard(container) {
           </tr></thead>
           <tbody>
             ${[...matrix.entries()].map(([teamId, row]) => {
-              let total = 0;
+              const velocity = velocityByTeam.get(teamId);
+              let totalCapacity = 0;
+              let totalForecast = 0;
+              let hasForecast = false;
               const cells = piSprints.map(s => {
-                const val = row.get(s.id);
-                if (val !== undefined) total += val;
-                return `<td class="num mono">${val !== undefined ? val.toFixed(1) : '\u2013'}</td>`;
+                const cap = row.get(s.id);
+                if (cap === undefined) return `<td class="num mono">\u2013</td>`;
+                totalCapacity += cap;
+
+                const band = bandByPosition.get(s.sprint_number);
+                let forecastLine = '';
+                if (velocity != null && band != null) {
+                  const forecast = Math.round(velocity * cap * band);
+                  totalForecast += forecast;
+                  hasForecast = true;
+                  forecastLine = `<div style="color:var(--accent); font-weight:600;">${forecast} SP</div>`;
+                }
+                return `<td class="num mono">${cap.toFixed(1)} PT${forecastLine}</td>`;
               }).join('');
-              return `<tr><td>${escapeHtml(teamMap.get(teamId) || t('dashboard.noTeam'))}</td>${cells}<td class="num mono" style="font-weight:600;">${total.toFixed(1)}</td></tr>`;
+              const totalForecastLine = hasForecast ? `<div style="color:var(--accent);">${Math.round(totalForecast)} SP</div>` : '';
+              return `<tr><td>${escapeHtml(teamMap.get(teamId) || t('dashboard.noTeam'))}</td>${cells}<td class="num mono" style="font-weight:600;">${totalCapacity.toFixed(1)} PT${totalForecastLine}</td></tr>`;
             }).join('')}
           </tbody>
         </table>

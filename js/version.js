@@ -6,9 +6,25 @@
 //
 // Bei jeder Aenderung: APP_VERSION anpassen UND einen neuen Eintrag oben in CHANGELOG ergaenzen.
 
-export const APP_VERSION = '2.10.1';
+export const APP_VERSION = '2.11.0';
 
 export const CHANGELOG = [
+  {
+    version: '2.11.0',
+    date: '2026-08-25',
+    changes: {
+      de: [
+        '"Alle Sprints"-Matrix in der Übersicht zeigt jetzt zusätzlich zur Kapazität (PT) auch die Story-Point-Prognose pro Sprint, farblich abgesetzt in Akzentfarbe',
+        'Gesamt-Spalte zeigt jetzt sowohl die Kapazitäts- als auch die Prognose-Summe über alle Sprints der PI',
+        'Macht sichtbar, wie die Prognose über die PI hinweg sinkt, auch wenn die Kapazität gleich bleibt - passend zum Konfidenzband',
+      ],
+      en: [
+        '"All Sprints" matrix in the Overview now also shows the story point forecast per sprint alongside capacity (PT), highlighted in accent color',
+        'Total column now shows both the capacity and forecast sum across all sprints of the PI',
+        'Makes visible how the forecast declines across the PI even when capacity stays the same - matching the confidence band',
+      ],
+    },
+  },
   {
     version: '2.10.1',
     date: '2026-08-25',
