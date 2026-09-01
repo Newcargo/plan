@@ -134,7 +134,7 @@ export async function renderTeamCalendar(container, context) {
     const currentTodayISO = todayISO();
 
     const [teamsRes, employeesRes, leaveRes, holidaysRes, blockedRes, sprintsRes, pisRes, emailCfgRes] = await Promise.all([
-      supabase.from('teams').select('id, name').order('name'),
+      supabase.from('teams').select('id, name, approver_id').order('name'),
       supabase.from('employees').select('id, full_name, team_id, start_date, end_date')
         .or(`start_date.is.null,start_date.lte.${monthEndISO}`)
         .or(`end_date.is.null,end_date.gte.${monthStartISO}`),
@@ -149,6 +149,17 @@ export async function renderTeamCalendar(container, context) {
 
     const teams = teamsRes.data || [];
     const employees = employeesRes.data || [];
+    const isAdmin = roles.has('admin');
+    const teamApproverMap = new Map(teams.map(tm => [tm.id, tm.approver_id]));
+    // Darf ich (nicht Admin) genau DIESEN Mitarbeiter genehmigen? Nur wenn ich fuer sein Team
+    // als Approver hinterlegt bin. Admin darf immer.
+    function canDecideFor(employeeId) {
+      if (isAdmin) return true;
+      if (!canApprove) return false;
+      const emp = employees.find(e => e.id === employeeId);
+      if (!emp) return false;
+      return teamApproverMap.get(emp.team_id) === myEmployeeId;
+    }
     const leaves = leaveRes.data || [];
     const holidays = holidaysRes.data || [];
     const blocked = blockedRes.data || [];
@@ -256,7 +267,7 @@ export async function renderTeamCalendar(container, context) {
               const bottomStyle = !topIsStatus ? `background:${meta.bg};color:${meta.text};` : (contextBg ? `background:${contextBg};` : '');
               const topCode = topIsStatus ? meta.code : '';
               const bottomCode = !topIsStatus ? meta.code : '';
-              const action = canApprove && statusKey === 'beantragt' ? 'decide'
+              const action = canDecideFor(emp.id) && statusKey === 'beantragt' ? 'decide'
                 : (isMe && statusKey === 'genehmigt_projekt' ? 'confirm-final' : '');
               const hint = action === 'decide' ? t('teamCal.clickToDecide') : (action === 'confirm-final' ? t('teamCal.clickToConfirmFinal') : '');
               return `<td class="cal-cell cal-cell-split${action ? ' cal-cell-clickable' : ''}" title="${escapeHtml(statusTitle)}${hint ? ' - ' + escapeHtml(hint) : ''}" ${action ? `data-leave-id="${leave.id}" data-action="${action}"` : ''}>
@@ -279,7 +290,7 @@ export async function renderTeamCalendar(container, context) {
               title = contextTitle;
             }
             const style = `${bg ? `background:${bg};` : ''}${textColor ? `color:${textColor};` : ''}`;
-            const action = canApprove && statusKey === 'beantragt' ? 'decide'
+            const action = canDecideFor(emp.id) && statusKey === 'beantragt' ? 'decide'
               : (isMe && statusKey === 'genehmigt_projekt' ? 'confirm-final' : '');
             const hint = action === 'decide' ? t('teamCal.clickToDecide') : (action === 'confirm-final' ? t('teamCal.clickToConfirmFinal') : '');
             const fullTitle = hint ? `${title} - ${hint}` : title;

@@ -15,10 +15,10 @@ const STATUS_META = {
 
 const APP_URL = 'https://newcargo.github.io/plan/';
 
-// Ermittelt alle Projekt Approver (An) und Admins (Cc, ohne Dopplungen) mit hinterlegter E-Mail,
+// Ermittelt alle Team Approver (An) und Admins (Cc, ohne Dopplungen) mit hinterlegter E-Mail,
 // baut daraus einen mailto-Link und oeffnet ihn. Gibt true zurueck, falls jemand gefunden wurde.
-async function notifyApprovers(supabase, t, employeeName, startDate, endDate, dayPortion, isReminder, isExternal, discussedWithTeam) {
-  const { data: roleRows, error } = await supabase.rpc('get_notification_recipients');
+async function notifyApprovers(supabase, t, employeeId, employeeName, startDate, endDate, dayPortion, isReminder, isExternal, discussedWithTeam) {
+  const { data: roleRows, error } = await supabase.rpc('get_notification_recipients', { target_employee_id: employeeId });
 
   if (error) return false;
 
@@ -379,7 +379,7 @@ export async function renderMyLeave(container, context) {
     }
 
     if (emailEnabled) {
-      const mailSent = await notifyApprovers(supabase, t, employee.full_name, start, end, portionSelect.value, false, isExternal, discussedWithTeam);
+      const mailSent = await notifyApprovers(supabase, t, employee.id, employee.full_name, start, end, portionSelect.value, false, isExternal, discussedWithTeam);
       if (!mailSent) {
         msg.style.color = 'var(--text-muted)';
         msg.textContent = t('myLeave.noRecipientsHint');
@@ -470,7 +470,7 @@ export async function renderMyLeave(container, context) {
       btn.addEventListener('click', async () => {
         const row = btn.closest('tr');
         const lr = leaveData.find(x => x.id === row.dataset.id);
-        const sent = await notifyApprovers(supabase, t, employee.full_name, lr.start_date, lr.end_date, lr.day_portion, true, lr.is_external_process, lr.discussed_with_team);
+        const sent = await notifyApprovers(supabase, t, employee.id, employee.full_name, lr.start_date, lr.end_date, lr.day_portion, true, lr.is_external_process, lr.discussed_with_team);
         if (!sent) alert(t('myLeave.noRecipientsHint'));
       });
     });

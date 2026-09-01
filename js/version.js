@@ -6,9 +6,49 @@
 //
 // Bei jeder Aenderung: APP_VERSION anpassen UND einen neuen Eintrag oben in CHANGELOG ergaenzen.
 
-export const APP_VERSION = '2.11.0';
+export const APP_VERSION = '2.13.0';
 
 export const CHANGELOG = [
+  {
+    version: '2.13.0',
+    date: '2026-08-25',
+    changes: {
+      de: [
+        'Rolle "Projekt Approver" umbenannt in "Team Approver" (überall in der App, in beiden Sprachen; Beschreibung korrigiert - stimmte seit dem Team-Approver-Umbau nicht mehr)',
+        'Wer bei einem Team als Approver eingetragen wird, bekommt automatisch die Rolle "Team Approver", falls noch nicht vorhanden',
+        'Die Rolle "Team Approver" kann nicht mehr entzogen werden, solange die Person bei mindestens einem Team als Approver hinterlegt ist - echt auf Datenbank-Ebene abgesichert, zusätzlich in der Oberfläche als ausgegraute Checkbox mit Erklärung sichtbar',
+        'Veralteten Hinweistext in "Rollen & Zugriff" entfernt (verwies noch auf eine längst abgeschlossene frühe Bauphase)',
+      ],
+      en: [
+        'Role "Project Approver" renamed to "Team Approver" (throughout the app, in both languages; description corrected - was no longer accurate since the team-approver change)',
+        'Whoever gets assigned as a team\'s approver automatically receives the "Team Approver" role, if not already present',
+        'The "Team Approver" role can no longer be removed while the person is assigned as approver for at least one team - genuinely enforced at the database level, additionally shown in the UI as a greyed-out checkbox with an explanation',
+        'Removed an outdated hint in "Roles & Access" (still referred to a long-finished early build phase)',
+      ],
+    },
+  },
+  {
+    version: '2.12.0',
+    date: '2026-08-25',
+    changes: {
+      de: [
+        'Grosser Umbau: Genehmiger sind jetzt pro Team fest zugeordnet, statt dass alle Projekt Approver alles sehen',
+        'Neues Pflichtfeld "Zuständiger Approver" beim Team anlegen (kann jede Person sein, nicht zwingend Teammitglied) - ohne Auswahl kann kein neues Team erstellt werden',
+        '"Genehmigungen", Team-Kalender-Genehmigen und Mail-/Glocken-Benachrichtigungen zeigen/informieren jetzt nur noch den für das jeweilige Team zuständigen Approver',
+        'Admin sieht und genehmigt weiterhin uneingeschränkt alles, People Pool Manager bleibt bewusst teamübergreifend',
+        'Echt auf Datenbank-Ebene abgesichert (nicht nur in der Oberfläche versteckt) - inkl. Sicherheitsnetz: fehlt einem Team der Approver, landet die Benachrichtigung automatisch bei Admin',
+        'Bestehende Teams haben noch keinen Approver hinterlegt - bitte in "Teams" pro Team nachtragen',
+      ],
+      en: [
+        'Major change: approvers are now assigned per team, instead of every project approver seeing everything',
+        'New required field "Responsible approver" when creating a team (can be any person, not necessarily a team member) - a team cannot be created without selecting one',
+        '"Approvals", team-calendar approval, and email/bell notifications now only show/notify the approver assigned to that specific team',
+        'Admin continues to see and approve everything without restriction, People Pool Manager deliberately stays team-agnostic',
+        'Genuinely enforced at the database level (not just hidden in the UI) - including a safety net: if a team has no approver set, the notification automatically falls back to admin',
+        'Existing teams do not have an approver set yet - please add one per team under "Teams"',
+      ],
+    },
+  },
   {
     version: '2.11.0',
     date: '2026-08-25',

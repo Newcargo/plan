@@ -10,6 +10,7 @@ export async function renderRoles(container, context) {
   const currentEmployeeId = context && context.employee && context.employee.id;
   const sortState = createSortState('full_name', true);
   let rolesData = [];
+  let teamApproverIds = new Set();
   let roleMapGlobal = new Map();
   const expandedIds = new Set();
 
@@ -21,7 +22,6 @@ export async function renderRoles(container, context) {
 
     <div class="card">
       <div class="form-panel-title">Was dürfen die Rollen?</div>
-      <p class="empty-state" style="padding-top:0;">Hinweis: Die Stammdaten-Rechte (Teams, Mitarbeiter, Feiertage usw.) für Admin sind bereits aktiv. Die feineren Unterschiede zwischen Projekt Approver und People Pool Manager greifen vollständig, sobald der Urlaubskalender selbst gebaut ist.</p>
       <div style="display:flex; flex-direction:column; gap:0.9rem;">
         ${ALL_ROLES.map(r => {
           const def = ROLE_DEFINITIONS[r];
@@ -118,6 +118,8 @@ export async function renderRoles(container, context) {
       .from('employees').select('id, full_name, email, auth_user_id, is_blocked');
     const { data: roleRows, error: roleErr } = await supabase
       .from('user_roles').select('user_id, role');
+    const { data: teamRows } = await supabase.from('teams').select('approver_id').not('approver_id', 'is', null);
+    teamApproverIds = new Set((teamRows || []).map(t => t.approver_id));
 
     if (empErr || roleErr) {
       list.innerHTML = `<p class="empty-state">${t('common.error')}</p>`;
@@ -172,9 +174,14 @@ export async function renderRoles(container, context) {
           <div class="role-detail-checks">
             ${ALL_ROLES.map(r => {
               const isOwnAdmin = r === 'admin' && emp.id === currentEmployeeId;
+              const isProtectedApprover = r === 'stufe2_genehmiger' && teamApproverIds.has(emp.id);
+              const disabled = isOwnAdmin || isProtectedApprover;
+              const title = isOwnAdmin ? t('roles.cannotChangeOwnAdmin')
+                : isProtectedApprover ? t('roles.cannotRemoveTeamApprover')
+                : ROLE_DEFINITIONS[r].description;
               return `
-              <label title="${isOwnAdmin ? escapeHtml(t('roles.cannotChangeOwnAdmin')) : escapeHtml(ROLE_DEFINITIONS[r].description)}">
-                <input type="checkbox" class="role-checkbox" data-role="${r}" ${roles.has(r) ? 'checked' : ''} ${isOwnAdmin ? 'disabled' : ''}>
+              <label title="${escapeHtml(title)}">
+                <input type="checkbox" class="role-checkbox" data-role="${r}" ${roles.has(r) ? 'checked' : ''} ${disabled ? 'disabled' : ''}>
                 ${t('roles.' + r)}
               </label>
             `;
