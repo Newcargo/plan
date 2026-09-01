@@ -128,9 +128,8 @@ export async function renderDashboard(container) {
       const velocity = velocityByTeam.get(teamId);
       let forecastHtml = `<div class="meta" style="color:var(--text-muted);">${t('dashboard.forecastUnavailable')}</div>`;
       if (velocity != null && band) {
-        const lower = Math.round(velocity * agg.capacity * Number(band.lower_pct));
-        const upper = Math.round(velocity * agg.capacity * Number(band.upper_pct));
-        forecastHtml = `<div class="meta" style="color:var(--accent); font-weight:600;">${t('dashboard.forecast')}: ${lower}\u2013${upper} SP</div>`;
+        const forecast = Math.round(velocity * agg.capacity * Number(band.lower_pct));
+        forecastHtml = `<div class="meta" style="color:var(--accent); font-weight:600;">${t('dashboard.forecast')}: ${forecast} SP</div>`;
       }
 
       return `

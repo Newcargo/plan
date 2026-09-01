@@ -6,9 +6,23 @@
 //
 // Bei jeder Aenderung: APP_VERSION anpassen UND einen neuen Eintrag oben in CHANGELOG ergaenzen.
 
-export const APP_VERSION = '2.9.0';
+export const APP_VERSION = '2.10.0';
 
 export const CHANGELOG = [
+  {
+    version: '2.10.0',
+    date: '2026-08-25',
+    changes: {
+      de: [
+        'Story-Point-Prognose zeigt jetzt eine einzelne, konservative Zahl statt einer Von-Bis-Spanne (Untergrenze des Konfidenzbands) - in "PI & Sprints" und "Übersicht"',
+        'Bei Sprint 1 einer PI (100% Konfidenz) bleibt die Zahl unverändert wie zuvor, spätere Sprints zeigen automatisch eine vorsichtigere Prognose',
+      ],
+      en: [
+        'Story point forecast now shows a single, conservative number instead of a low-high range (lower bound of the confidence band) - in "PI & Sprints" and "Overview"',
+        'For sprint 1 of a PI (100% confidence) the number stays the same as before, later sprints automatically show a more conservative forecast',
+      ],
+    },
+  },
   {
     version: '2.9.0',
     date: '2026-08-25',

@@ -288,16 +288,16 @@ export async function renderSprints(container, context) {
       return;
     }
 
-    // Pro Team die historische Velocity abfragen und daraus den Von-Bis-Bereich berechnen
+    // Pro Team die historische Velocity abfragen und daraus die konservative Prognose berechnen
+    // (Untergrenze des Konfidenzbands - bei Sprint 1 einer PI = 100%, entspricht dann dem vollen
+    // Durchschnittswert; je weiter in der PI, desto vorsichtiger die Zahl automatisch).
     const velocities = await Promise.all(teams.map(tm => supabase.rpc('get_team_velocity', { target_team_id: tm.id, window_size: windowSize })));
-    const rangeByTeam = new Map();
+    const forecastByTeam = new Map();
     teams.forEach((tm, i) => {
       const velocity = velocities[i].data;
       const capacity = capacityByTeam.get(tm.id);
-      if (velocity == null || capacity == null || !band) { rangeByTeam.set(tm.id, null); return; }
-      const lower = Math.round(velocity * capacity * Number(band.lower_pct));
-      const upper = Math.round(velocity * capacity * Number(band.upper_pct));
-      rangeByTeam.set(tm.id, { lower, upper });
+      if (velocity == null || capacity == null || !band) { forecastByTeam.set(tm.id, null); return; }
+      forecastByTeam.set(tm.id, Math.round(velocity * capacity * Number(band.lower_pct)));
     });
 
     const bodyHtml = `
@@ -308,9 +308,9 @@ export async function renderSprints(container, context) {
         ${teams.map(tm => {
           const ex = existingMap.get(tm.id);
           const cap = capacityByTeam.get(tm.id);
-          const range = rangeByTeam.get(tm.id);
-          const rangeText = range
-            ? t('sprints.forecastRange').replace('{lower}', range.lower).replace('{upper}', range.upper)
+          const forecast = forecastByTeam.get(tm.id);
+          const rangeText = forecast !== null
+            ? t('sprints.forecastRange').replace('{value}', forecast)
             : t('sprints.forecastUnavailable');
           return `
             <label>
