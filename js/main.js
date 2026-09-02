@@ -3,12 +3,9 @@ import { checkAccess, signIn, signOut } from './auth.js';
 import { t, getLang, setLang, applyTranslations } from './i18n.js';
 
 import { renderDashboard } from './sections/dashboard.js';
-import { renderTeams } from './sections/teams.js';
-import { renderEmployees } from './sections/employees.js';
-import { renderHolidays } from './sections/holidays.js';
-import { renderBlocked } from './sections/blockedPeriods.js';
+import { renderTeamsEmployees } from './sections/teamsEmployees.js';
+import { renderHolidaysBlocked } from './sections/holidaysBlocked.js';
 import { renderSprints } from './sections/sprints.js';
-import { renderBands } from './sections/confidenceBands.js';
 import { renderSettings } from './sections/settings.js';
 import { renderRoles } from './sections/roles.js';
 import { renderChangelog } from './sections/changelog.js';
@@ -24,12 +21,9 @@ import { initNotifications, refreshBadge } from './notifications.js';
 
 const routes = {
   dashboard: renderDashboard,
-  teams: renderTeams,
-  employees: renderEmployees,
-  holidays: renderHolidays,
-  blocked: renderBlocked,
+  'teams-employees': renderTeamsEmployees,
+  'holidays-blocked': renderHolidaysBlocked,
   sprints: renderSprints,
-  bands: renderBands,
   settings: renderSettings,
   roles: renderRoles,
   changelog: renderChangelog,
@@ -85,7 +79,7 @@ async function navigate(route) {
   refreshApprovalsBadge();
 }
 
-const CONFIGURABLE_AREAS = ['genehmigt', 'teams', 'employees', 'holidays', 'blocked', 'dashboard', 'sprints', 'bands'];
+const CONFIGURABLE_AREAS = ['genehmigt', 'teams', 'employees', 'holidays', 'blocked', 'dashboard', 'sprints'];
 
 // Admin hat immer und ueberall Zugriff, unabhaengig vom Tabelleninhalt - Sicherheitsnetz,
 // analog zur Datenbank-Funktion has_permission().
@@ -108,7 +102,8 @@ function applyRoleVisibility() {
     const area = btn.dataset.area;
 
     if (area) {
-      btn.hidden = !(currentPermissions[area] && currentPermissions[area].view);
+      const areas = area.split(',');
+      btn.hidden = !areas.some(a => currentPermissions[a] && currentPermissions[a].view);
     } else if (requires) {
       btn.hidden = !currentRoles.has(requires);
     } else {

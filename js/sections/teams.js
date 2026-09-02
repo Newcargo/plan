@@ -11,7 +11,6 @@ export async function renderTeams(container, context) {
   let allEmployees = [];
 
   container.innerHTML = `
-    <header><h1>${t('nav.teams')}</h1></header>
     <div class="card">
       <div class="toolbar">
         <div></div>

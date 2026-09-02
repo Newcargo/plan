@@ -13,7 +13,6 @@ export async function renderEmployees(container, context) {
   const sortState = createSortState('full_name', true);
 
   container.innerHTML = `
-    <header><h1>${t('employees.title')}</h1></header>
     <div class="card">
       <div class="toolbar">
         <div></div>

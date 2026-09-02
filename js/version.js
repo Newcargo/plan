@@ -6,9 +6,57 @@
 //
 // Bei jeder Aenderung: APP_VERSION anpassen UND einen neuen Eintrag oben in CHANGELOG ergaenzen.
 
-export const APP_VERSION = '2.15.0';
+export const APP_VERSION = '2.17.0';
 
 export const CHANGELOG = [
+  {
+    version: '2.17.0',
+    date: '2026-08-25',
+    changes: {
+      de: [
+        '"Teams" und "Mitarbeiter" zu einer Seite "Teams & Mitarbeiter" mit Reitern zusammengelegt',
+        '"Feiertage" und "Sperrzeiten" zu einer Seite "Feiertage & Sperrzeiten" mit Reitern zusammengelegt',
+        'Berechtigungen bleiben unverändert getrennt pro Bereich - ein Reiter wird nur angezeigt, wenn die Person genau dafür "Sehen" erlaubt ist, unabhängig vom anderen Reiter',
+        'Seitenleiste dadurch von 4 auf 2 Einträge in "Stammdaten" reduziert',
+      ],
+      en: [
+        '"Teams" and "Employees" merged into one page "Teams & Employees" with tabs',
+        '"Holidays" and "Blocked Periods" merged into one page "Holidays & Blocked Periods" with tabs',
+        'Permissions remain separate per area as before - a tab only shows if the person has "View" for that specific area, independent of the other tab',
+        'Sidebar reduced from 4 to 2 entries under "Master Data" as a result',
+      ],
+    },
+  },
+  {
+    version: '2.16.1',
+    date: '2026-08-25',
+    changes: {
+      de: [
+        'Hilfe-Seite nachgezogen: Ein-/Austrittsdatum-Automatik, "Nachtragen"-Funktion für Admin, Pflichtfeld "Zuständiger Approver" bei Teams und Halbtags-Darstellung von Feiertagen/Sperrzeiten im Kalender waren dort noch nicht erwähnt',
+      ],
+      en: [
+        'Help page caught up: the start/end date automation, the "Backfill" feature for admin, the required "Responsible approver" field on teams, and the half-day display of holidays/blocked periods in the calendar were not yet mentioned there',
+      ],
+    },
+  },
+  {
+    version: '2.16.0',
+    date: '2026-08-25',
+    changes: {
+      de: [
+        '"PI & Sprints" zeigt neben der Kapazität (PT) jetzt auch die Summe der Story Points pro Sprint (Geplant/Erreicht)',
+        'Story Points im Pop-up speichern aktualisiert die Zeile jetzt sofort, statt erst nach manuellem Neuladen',
+        'Konfidenzband ist von einer eigenen Seite in "Einstellungen" umgezogen - dadurch fest Admin-only, aus der konfigurierbaren Berechtigungsmatrix entfernt',
+        '"Übersicht" in der Seitenleiste umbenannt in "PI Übersicht"',
+      ],
+      en: [
+        '"PI & Sprints" now also shows the sum of story points per sprint (Planned/Completed) next to capacity (PT)',
+        'Saving story points in the pop-up now refreshes the row immediately, instead of only after a manual reload',
+        'Confidence band moved from its own page into "Settings" - now fixed to Admin-only, removed from the configurable permission matrix',
+        '"Overview" in the sidebar renamed to "PI Overview"',
+      ],
+    },
+  },
   {
     version: '2.15.0',
     date: '2026-08-25',

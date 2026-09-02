@@ -10,7 +10,6 @@ export async function renderHolidays(container, context) {
   const expandedYears = new Set([String(new Date().getFullYear())]);
 
   container.innerHTML = `
-    <header><h1>${t('nav.holidays')}</h1></header>
     <div class="card">
       <div class="toolbar">
         <div></div>

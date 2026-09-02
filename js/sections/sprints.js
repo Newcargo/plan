@@ -185,6 +185,16 @@ export async function renderSprints(container, context) {
       const totals = new Map();
       (caps || []).forEach(c => totals.set(c.sprint_id, (totals.get(c.sprint_id) || 0) + Number(c.capacity_person_days)));
       sprintsData.forEach(s => { s.capacityTotal = totals.has(s.id) ? totals.get(s.id) : null; });
+
+      const { data: vel } = await supabase.from('sprint_velocity').select('sprint_id, planned_sp, completed_sp').in('sprint_id', sprintIds);
+      const spTotals = new Map();
+      (vel || []).forEach(v => {
+        const entry = spTotals.get(v.sprint_id) || { planned: 0, completed: 0 };
+        entry.planned += Number(v.planned_sp);
+        entry.completed += Number(v.completed_sp);
+        spTotals.set(v.sprint_id, entry);
+      });
+      sprintsData.forEach(s => { s.spTotal = spTotals.get(s.id) || null; });
     }
 
     renderSprintRows();
@@ -207,6 +217,9 @@ export async function renderSprints(container, context) {
           ${s.capacityTotal !== null && s.capacityTotal !== undefined
             ? `<span class="mono">${s.capacityTotal.toFixed(1)} PT</span>`
             : `<span class="empty-state" style="padding:0;">${t('sprints.notCalculated')}</span>`}
+          ${s.spTotal
+            ? `<span class="mono" style="color:var(--accent); margin-left:0.5rem;">${t('sprints.spTotal').replace('{planned}', s.spTotal.planned).replace('{completed}', s.spTotal.completed)}</span>`
+            : ''}
           ${canEdit ? `<button type="button" class="btn btn-primary calc-capacity-btn" style="margin-left:0.5rem;">${t('sprints.calculate')}</button>` : ''}
           ${canEdit ? `<button type="button" class="btn btn-teal velocity-btn" style="margin-left:0.35rem;">${t('sprints.storyPoints')}</button>` : ''}
         </td>
@@ -350,6 +363,7 @@ export async function renderSprints(container, context) {
       const { error } = await supabase.from('sprint_velocity').upsert(rows, { onConflict: 'sprint_id,team_id' });
       if (error) { alert(t('common.error') + '\n' + error.message); return; }
       modal.close();
+      loadSprints();
     });
   }
 

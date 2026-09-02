@@ -73,6 +73,7 @@ export async function renderHelp(container, context) {
       t('help.admin5'),
       t('help.admin6'),
       t('help.admin7'),
+      t('help.admin8'),
     ]));
   }
 
