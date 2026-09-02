@@ -130,9 +130,9 @@ export async function renderBlocked(container, context) {
             <span class="year-count">(${items.length})</span>
           </div>
           <div class="year-group-body" ${isOpen ? '' : 'hidden'}>
-            <table>
+            <table style="table-layout:fixed;">
               <thead><tr>
-                <th>${t('blocked.start')}</th><th>${t('blocked.end')}</th><th>${t('blocked.label')}</th><th>${t('blocked.capacityImpact')}</th><th></th>
+                <th style="width:120px;">${t('blocked.start')}</th><th style="width:120px;">${t('blocked.end')}</th><th>${t('blocked.label')}</th><th style="width:220px;">${t('blocked.capacityImpact')}</th><th style="width:110px;"></th>
               </tr></thead>
               <tbody>
                 ${items.map(bp => `

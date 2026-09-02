@@ -6,9 +6,45 @@
 //
 // Bei jeder Aenderung: APP_VERSION anpassen UND einen neuen Eintrag oben in CHANGELOG ergaenzen.
 
-export const APP_VERSION = '2.18.0';
+export const APP_VERSION = '2.20.0';
 
 export const CHANGELOG = [
+  {
+    version: '2.20.0',
+    date: '2026-08-25',
+    changes: {
+      de: [
+        'Konfidenzband ist jetzt ein echtes Feld pro Sprint statt eines geteilten Werts nach Position - ändert man den Wert bei einem Sprint, sind andere PIs mit derselben Sprint-Position nicht mehr betroffen',
+        'Neue Spalte "Konfidenz" bei "PI & Sprints" (zwischen Ende und Abgeschlossen), direkt in der Tabelle editierbar, auch im Sprint-Formular setzbar',
+        'Eigene Konfidenzband-Seite in Einstellungen entfernt - nicht mehr nötig, da jetzt Teil der normalen "PI & Sprints"-Berechtigung statt eines eigenen Bereichs',
+        'Toten Einstellungswert "Standard-Sprintanzahl pro PI" entfernt (hatte nie irgendeine Wirkung)',
+        'Bestehende Prognosen bleiben unverändert - alle Werte wurden 1:1 aus dem bisherigen, nach Position geteilten Konfidenzband übernommen',
+      ],
+      en: [
+        'Confidence band is now a real per-sprint field instead of a value shared by position - changing it on one sprint no longer affects other PIs with the same sprint position',
+        'New "Confidence" column on "PI & Sprints" (between End and Closed), directly editable in the table, also settable in the sprint form',
+        'Removed the standalone confidence-band page in Settings - no longer needed, now just part of the normal "PI & Sprints" permission instead of its own area',
+        'Removed the dead "Default sprint count per PI" setting (never had any actual effect)',
+        'Existing forecasts remain unchanged - all values were carried over 1:1 from the previous, position-shared confidence band',
+      ],
+    },
+  },
+  {
+    version: '2.19.0',
+    date: '2026-08-25',
+    changes: {
+      de: [
+        'Feiertage & Sperrzeiten: Spaltenausrichtung zwischen Jahres-Gruppen korrigiert (jede Gruppe hatte bisher eigene, leicht abweichende Spaltenbreiten)',
+        'Neu: "Gefahrenzone" in Einstellungen (nur Admin) - löscht Urlaubsanträge, Feiertage oder Sperrzeiten unwiderruflich, optional auf einen Zeitraum eingegrenzt, erfordert erneute Passwort-Eingabe zur Bestätigung',
+        'Neu: Excel-Export im Team-Kalender - fragt nach einem Zeitraum, exportiert danach ein Kalender-Raster (Personen × Tage) mit den gleichen Status-Kürzeln wie im Kalender selbst',
+      ],
+      en: [
+        'Holidays & Blocked Periods: fixed column alignment between year groups (each group previously had its own, slightly different column widths)',
+        'New: "Danger Zone" in Settings (admin only) - permanently deletes leave requests, holidays, or blocked periods, optionally limited to a date range, requires re-entering your password to confirm',
+        'New: Excel export in the team calendar - asks for a date range, then exports a calendar grid (people × days) using the same status codes as the calendar itself',
+      ],
+    },
+  },
   {
     version: '2.18.0',
     date: '2026-08-25',

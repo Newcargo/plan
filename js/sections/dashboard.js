@@ -32,7 +32,7 @@ export async function renderDashboard(container) {
   let selectedSprintId = null; // null = "Alle Sprints" der gewaehlten PI
 
   const { data: pis, error: piErr } = await supabase.from('program_increments').select('id, name').order('created_at', { ascending: false });
-  const { data: sprintsRaw } = await supabase.from('sprints').select('id, pi_id, sprint_number, name, start_date, end_date').order('sprint_number');
+  const { data: sprintsRaw } = await supabase.from('sprints').select('id, pi_id, sprint_number, name, start_date, end_date, confidence_pct').order('sprint_number');
   allSprints = sprintsRaw || [];
 
   if (piErr || !pis || !pis.length) {
@@ -84,13 +84,12 @@ export async function renderDashboard(container) {
     contentEl.innerHTML = `<p class="empty-state">${t('common.loading')}</p>`;
     const sprint = allSprints.find(s => s.id === sprintId);
 
-    const [{ data: teams }, { data: snapshots, error: snapErr }, { data: band }, { data: cfg }] = await Promise.all([
+    const [{ data: teams }, { data: snapshots, error: snapErr }, { data: cfg }] = await Promise.all([
       supabase.from('teams').select('id, name').eq('tracks_capacity', true).order('name'),
       supabase
         .from('capacity_snapshots')
         .select('capacity_person_days, working_days, absence_days, employees(team_id)')
         .eq('sprint_id', sprintId),
-      supabase.from('confidence_bands').select('lower_pct, upper_pct').eq('sprint_position', sprint ? sprint.sprint_number : -1).maybeSingle(),
       supabase.from('app_config').select('value').eq('key', 'velocity_rolling_window').maybeSingle(),
     ]);
 
@@ -127,8 +126,8 @@ export async function renderDashboard(container) {
 
       const velocity = velocityByTeam.get(teamId);
       let forecastHtml = `<div class="meta" style="color:var(--text-muted);">${t('dashboard.forecastUnavailable')}</div>`;
-      if (velocity != null && band) {
-        const forecast = Math.round(velocity * agg.capacity * Number(band.lower_pct));
+      if (velocity != null && sprint) {
+        const forecast = Math.round(velocity * agg.capacity * Number(sprint.confidence_pct));
         forecastHtml = `<div class="meta" style="color:var(--accent); font-weight:600;">${t('dashboard.forecast')}: ${forecast} SP</div>`;
       }
 
@@ -151,21 +150,19 @@ export async function renderDashboard(container) {
     if (!piSprints.length) { contentEl.innerHTML = `<p class="empty-state">${t('common.none')}</p>`; return; }
 
     const sprintIds = piSprints.map(s => s.id);
-    const sprintPositions = [...new Set(piSprints.map(s => s.sprint_number))];
-    const [{ data: teams }, { data: snapshots, error: snapErr }, { data: bands }, { data: cfg }] = await Promise.all([
+    const [{ data: teams }, { data: snapshots, error: snapErr }, { data: cfg }] = await Promise.all([
       supabase.from('teams').select('id, name').eq('tracks_capacity', true).order('name'),
       supabase
         .from('capacity_snapshots')
         .select('sprint_id, capacity_person_days, employees(team_id)')
         .in('sprint_id', sprintIds),
-      supabase.from('confidence_bands').select('sprint_position, lower_pct').in('sprint_position', sprintPositions),
       supabase.from('app_config').select('value').eq('key', 'velocity_rolling_window').maybeSingle(),
     ]);
 
     if (snapErr) { contentEl.innerHTML = `<p class="empty-state">${t('common.error')}</p>`; return; }
 
     const windowSize = (cfg && cfg.value) ? Number(cfg.value) : 3;
-    const bandByPosition = new Map((bands || []).map(b => [b.sprint_position, Number(b.lower_pct)]));
+    const sprintById = new Map(piSprints.map(s => [s.id, s]));
 
     const teamIdSet = new Set((teams || []).map(tm => tm.id));
     // matrix[teamId][sprintId] = capacity
@@ -208,10 +205,10 @@ export async function renderDashboard(container) {
                 if (cap === undefined) return `<td class="num mono">\u2013</td>`;
                 totalCapacity += cap;
 
-                const band = bandByPosition.get(s.sprint_number);
+                const confidencePct = sprintById.get(s.id)?.confidence_pct;
                 let forecastLine = '';
-                if (velocity != null && band != null) {
-                  const forecast = Math.round(velocity * cap * band);
+                if (velocity != null && confidencePct != null) {
+                  const forecast = Math.round(velocity * cap * Number(confidencePct));
                   totalForecast += forecast;
                   hasForecast = true;
                   forecastLine = `<div style="color:var(--accent); font-weight:600;">${forecast} SP</div>`;

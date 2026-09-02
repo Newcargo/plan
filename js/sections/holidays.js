@@ -115,8 +115,8 @@ export async function renderHolidays(container, context) {
             <span class="year-count">(${items.length})</span>
           </div>
           <div class="year-group-body" ${isOpen ? '' : 'hidden'}>
-            <table>
-              <thead><tr><th>${t('holidays.date')}</th><th>${t('holidays.name')}</th><th>${t('holidays.note')}</th><th></th></tr></thead>
+            <table style="table-layout:fixed;">
+              <thead><tr><th style="width:140px;">${t('holidays.date')}</th><th style="width:260px;">${t('holidays.name')}</th><th>${t('holidays.note')}</th><th style="width:110px;"></th></tr></thead>
               <tbody>
                 ${items.map(h => `
                   <tr data-id="${h.id}" class="${h.date < today ? 'row-past' : ''}">

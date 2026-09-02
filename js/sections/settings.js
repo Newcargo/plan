@@ -1,9 +1,10 @@
 import { supabase } from '../supabaseClient.js';
 import { t } from '../i18n.js';
-import { fieldLabel, ICON_EDIT, ICON_DELETE, iconButton } from '../icons.js';
+import { fieldLabel } from '../icons.js';
 import { openFormModal } from '../modal.js';
+import { signIn } from '../auth.js';
 
-export async function renderSettings(container) {
+export async function renderSettings(container, context) {
   container.innerHTML = `
     <header><h1>${t('settings.title')}</h1></header>
     <div class="card">
@@ -11,9 +12,6 @@ export async function renderSettings(container) {
       <div class="form-grid">
         ${fieldLabel(t('settings.rollingWindow'), 'Anzahl der letzten abgeschlossenen Sprints, aus denen der SP/PT-Durchschnitt (Velocity) für die Prognose berechnet wird.')}
         <input type="number" id="f-window" min="1" step="1" class="narrow">
-
-        ${fieldLabel(t('settings.defaultSprintCount'), 'Standardwert für die Anzahl Sprints bei einer neuen PI, z. B. 5.')}
-        <input type="number" id="f-sprintcount" min="1" step="1" class="narrow">
 
         ${fieldLabel(t('roles.blocked') + ' – Kontaktperson (Name, keine E-Mail)', 'Name, der gesperrten Mitarbeitenden beim Login-Versuch angezeigt wird, an wen sie sich wenden sollen. Bewusst nur ein Name, keine E-Mail-Adresse.')}
         <input type="text" id="f-blocked-contact">
@@ -56,42 +54,45 @@ export async function renderSettings(container) {
       </div>
     </div>
 
-    <div class="card">
-      <div class="form-panel-title">${t('bands.title')}</div>
-      <p style="font-size:0.82rem; color:var(--text-muted); margin:-0.25rem 0 0.9rem;">${t('bands.subtitle')}</p>
-      <div class="toolbar">
-        <div></div>
-        <button type="button" class="btn btn-primary" id="band-add-btn">${t('common.add')}</button>
+    <div class="card" style="border:2px solid var(--danger);">
+      <div class="form-panel-title" style="color:var(--danger);">⚠️ ${t('settings.dangerTitle')}</div>
+      <p style="font-size:0.82rem; color:var(--text-muted); margin:-0.25rem 0 0.9rem;">${t('settings.dangerHint')}</p>
+      <div class="form-grid">
+        <label>${t('settings.dangerCategory')}</label>
+        <select id="danger-category">
+          <option value="leave_requests">${t('settings.dangerLeave')}</option>
+          <option value="holidays">${t('nav.holidays')}</option>
+          <option value="blocked_periods">${t('nav.blocked')}</option>
+        </select>
+
+        ${fieldLabel(t('settings.dangerRange'), t('settings.dangerRangeHint'))}
+        <div class="date-range-inline">
+          <input type="date" id="danger-from">
+          <span>–</span>
+          <input type="date" id="danger-to">
+        </div>
       </div>
-      <table>
-        <thead><tr>
-          <th>${t('bands.position')}</th><th class="num">${t('bands.lower')}</th><th class="num">${t('bands.upper')}</th><th></th>
-        </tr></thead>
-        <tbody id="band-tbody"><tr><td colspan="4" class="empty-state">${t('common.loading')}</td></tr></tbody>
-      </table>
+      <div class="form-actions" style="justify-content:flex-start;">
+        <button id="danger-delete-btn" class="btn btn-danger">${t('settings.dangerDelete')}</button>
+      </div>
     </div>
   `;
 
   const { data } = await supabase.from('app_config').select('*');
   const map = new Map((data || []).map(c => [c.key, c.value]));
   document.getElementById('f-window').value = map.get('velocity_rolling_window') ?? 3;
-  document.getElementById('f-sprintcount').value = map.get('default_pi_sprint_count') ?? 5;
   document.getElementById('f-blocked-contact').value = map.get('blocked_contact_name') ?? 'Admin';
   document.getElementById('f-reminder-days').value = map.get('reminder_business_days') ?? 5;
   document.getElementById('f-email-enabled').checked = map.get('email_notifications_enabled') ?? true;
 
   document.getElementById('save-btn').addEventListener('click', async () => {
     const windowVal = Number(document.getElementById('f-window').value);
-    const sprintCountVal = Number(document.getElementById('f-sprintcount').value);
     const contactName = document.getElementById('f-blocked-contact').value.trim() || 'Admin';
     const reminderDays = Number(document.getElementById('f-reminder-days').value);
     const emailEnabled = document.getElementById('f-email-enabled').checked;
 
     const { error: e1 } = await supabase.from('app_config').upsert(
       { key: 'velocity_rolling_window', value: windowVal }, { onConflict: 'key' }
-    );
-    const { error: e2 } = await supabase.from('app_config').upsert(
-      { key: 'default_pi_sprint_count', value: sprintCountVal }, { onConflict: 'key' }
     );
     const { error: e3 } = await supabase.from('app_config').upsert(
       { key: 'blocked_contact_name', value: contactName }, { onConflict: 'key' }
@@ -104,7 +105,7 @@ export async function renderSettings(container) {
     );
 
     const msg = document.getElementById('save-msg');
-    if (e1 || e2 || e3 || e4 || e5) {
+    if (e1 || e3 || e4 || e5) {
       msg.style.color = 'var(--danger)';
       msg.textContent = t('common.error');
     } else {
@@ -195,88 +196,67 @@ export async function renderSettings(container) {
     }
   });
 
-  function bandFormBody(b) {
-    return `
+  const DANGER_CONFIG = {
+    leave_requests: { table: 'leave_requests', dateCol: 'start_date' },
+    holidays: { table: 'holidays', dateCol: 'date' },
+    blocked_periods: { table: 'blocked_periods', dateCol: 'start_date' },
+  };
+
+  function buildDangerQuery(base, cfg, from, to) {
+    let q = base;
+    if (from) q = q.gte(cfg.dateCol, from);
+    if (to) q = q.lte(cfg.dateCol, to);
+    return q;
+  }
+
+  document.getElementById('danger-delete-btn').addEventListener('click', async () => {
+    const categorySelect = document.getElementById('danger-category');
+    const cfg = DANGER_CONFIG[categorySelect.value];
+    const categoryLabel = categorySelect.selectedOptions[0].textContent;
+    const from = document.getElementById('danger-from').value || null;
+    const to = document.getElementById('danger-to').value || null;
+
+    const { count, error: countErr } = await buildDangerQuery(
+      supabase.from(cfg.table).select('*', { count: 'exact', head: true }), cfg, from, to
+    );
+    if (countErr) { alert(t('common.error') + '\n' + countErr.message); return; }
+    if (!count) { alert(t('settings.dangerNothing')); return; }
+
+    const bodyHtml = `
+      <p>${t('settings.dangerConfirmText').replace('{count}', count).replace('{category}', categoryLabel)}</p>
       <div class="form-grid">
-        ${fieldLabel(t('bands.position'), 'Position des Sprints innerhalb der PI (1 = direkt nach PI Planning). Muss mit der Sprint-Position bei "PI & Sprints" übereinstimmen.')}
-        <input type="number" id="mf-pos" min="1" required ${b ? 'readonly' : ''} value="${b ? b.sprint_position : ''}">
-
-        ${fieldLabel(t('bands.lower'), 'Wie viel Prozent der berechneten Kapazität mindestens erwartet wird.')}
-        <input type="number" id="mf-lower" min="0" max="1" step="0.01" required value="${b ? b.lower_pct : ''}">
-
-        ${fieldLabel(t('bands.upper'), 'Wie viel Prozent der berechneten Kapazität höchstens erwartet wird, meist 100%.')}
-        <input type="number" id="mf-upper" min="0" max="1" step="0.01" required value="${b ? b.upper_pct : ''}">
+        <label>${t('settings.dangerPasswordLabel')}</label>
+        <input type="password" id="danger-password" required autocomplete="current-password">
       </div>
+      <p id="danger-error" class="error-text" hidden></p>
     `;
-  }
+    const modal = openFormModal({ title: t('settings.dangerConfirmTitle'), bodyHtml, submitLabel: t('settings.dangerDelete'), cancelLabel: t('common.cancel') });
+    modal.submitBtn.classList.remove('btn-primary');
+    modal.submitBtn.classList.add('btn-danger');
 
-  function openBandAdd() {
-    const modal = openFormModal({ title: t('common.add'), bodyHtml: bandFormBody(null), submitLabel: t('common.save'), cancelLabel: t('common.cancel') });
     modal.submitBtn.addEventListener('click', async () => {
-      const payload = {
-        sprint_position: modal.body.querySelector('#mf-pos').value,
-        lower_pct: modal.body.querySelector('#mf-lower').value,
-        upper_pct: modal.body.querySelector('#mf-upper').value,
-      };
-      const { error } = await supabase.from('confidence_bands').upsert(payload, { onConflict: 'sprint_position' });
-      if (error) { alert(t('common.error') + '\n' + error.message); return; }
+      const errorEl = modal.body.querySelector('#danger-error');
+      errorEl.hidden = true;
+      const password = modal.body.querySelector('#danger-password').value;
+      if (!password) return;
+
+      const email = context && context.employee && context.employee.email;
+      if (!email) { errorEl.textContent = t('settings.dangerNoEmail'); errorEl.hidden = false; return; }
+
+      const { error: authErr } = await signIn(email, password);
+      if (authErr) {
+        errorEl.textContent = t('settings.dangerWrongPassword');
+        errorEl.hidden = false;
+        return;
+      }
+
+      const { error: delErr } = await buildDangerQuery(supabase.from(cfg.table).delete(), cfg, from, to);
+      if (delErr) { errorEl.textContent = delErr.message; errorEl.hidden = false; return; }
+
       modal.close();
-      loadBands();
+      alert(t('settings.dangerDone').replace('{count}', count));
+      document.getElementById('danger-from').value = '';
+      document.getElementById('danger-to').value = '';
     });
-  }
-
-  function openBandEdit(b) {
-    const modal = openFormModal({ title: t('common.edit'), bodyHtml: bandFormBody(b), submitLabel: t('common.save'), cancelLabel: t('common.cancel') });
-    modal.submitBtn.addEventListener('click', async () => {
-      const payload = {
-        sprint_position: b.sprint_position,
-        lower_pct: modal.body.querySelector('#mf-lower').value,
-        upper_pct: modal.body.querySelector('#mf-upper').value,
-      };
-      const { error } = await supabase.from('confidence_bands').upsert(payload, { onConflict: 'sprint_position' });
-      if (error) { alert(t('common.error') + '\n' + error.message); return; }
-      modal.close();
-      loadBands();
-    });
-  }
-
-  document.getElementById('band-add-btn').addEventListener('click', openBandAdd);
-
-  async function loadBands() {
-    const tbody = document.getElementById('band-tbody');
-    const { data, error } = await supabase.from('confidence_bands').select('*').order('sprint_position');
-    if (error) { tbody.innerHTML = `<tr><td colspan="4" class="empty-state">${t('common.error')}</td></tr>`; return; }
-    if (!data.length) { tbody.innerHTML = `<tr><td colspan="4" class="empty-state">${t('common.none')}</td></tr>`; return; }
-
-    tbody.innerHTML = data.map(b => `
-      <tr data-pos="${b.sprint_position}">
-        <td class="mono">${b.sprint_position}</td>
-        <td class="num mono">${Math.round(Number(b.lower_pct) * 100)}%</td>
-        <td class="num mono">${Math.round(Number(b.upper_pct) * 100)}%</td>
-        <td class="row-actions">
-          ${iconButton(ICON_EDIT, t('common.edit'), 'band-edit-btn')}
-          ${iconButton(ICON_DELETE, t('common.delete'), 'band-delete-btn')}
-        </td>
-      </tr>
-    `).join('');
-
-    tbody.querySelectorAll('.band-edit-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const pos = btn.closest('tr').dataset.pos;
-        openBandEdit(data.find(x => String(x.sprint_position) === pos));
-      });
-    });
-
-    tbody.querySelectorAll('.band-delete-btn').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        if (!confirm(t('common.confirmDelete'))) return;
-        const pos = btn.closest('tr').dataset.pos;
-        const { error } = await supabase.from('confidence_bands').delete().eq('sprint_position', pos);
-        if (error) { alert(t('common.error') + '\n' + error.message); return; }
-        loadBands();
-      });
-    });
-  }
-
-  loadBands();
+  });
 }

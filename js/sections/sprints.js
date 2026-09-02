@@ -36,7 +36,7 @@ export async function renderSprints(container, context) {
       </div>
       <table>
         <thead><tr id="sprint-thead-row"></tr></thead>
-        <tbody id="sprint-tbody"><tr><td colspan="7" class="empty-state">${t('common.loading')}</td></tr></tbody>
+        <tbody id="sprint-tbody"><tr><td colspan="8" class="empty-state">${t('common.loading')}</td></tr></tbody>
       </table>
     </div>
   `;
@@ -50,6 +50,7 @@ export async function renderSprints(container, context) {
       ${sortableHeader(t('common.name'), 'name', sortState)}
       ${sortableHeader(t('sprints.start'), 'start_date', sortState)}
       ${sortableHeader(t('sprints.end'), 'end_date', sortState)}
+      <th class="num">${t('sprints.confidence')}</th>
       <th>${t('sprints.closed')}</th>
       <th class="num">${t('sprints.capacity')}</th>
       <th></th>
@@ -112,6 +113,9 @@ export async function renderSprints(container, context) {
           <span>–</span>
           <input type="date" id="mf-end" required value="${s ? s.end_date : todayISO()}">
         </div>
+
+        ${fieldLabel(t('sprints.confidence'), 'Wie zuverlässig die Prognose für genau diesen Sprint eingeschätzt wird (0–100%). Gilt nur für diesen Sprint, wirkt sich auf keinen anderen aus.')}
+        <input type="number" id="mf-confidence" min="0" max="100" step="5" value="${s ? Math.round(Number(s.confidence_pct) * 100) : 100}">
       </div>
     `;
   }
@@ -134,6 +138,7 @@ export async function renderSprints(container, context) {
           name: modal.body.querySelector('#mf-name').value.trim() || null,
           start_date: modal.body.querySelector('#mf-start').value,
           end_date: modal.body.querySelector('#mf-end').value,
+          confidence_pct: Number(modal.body.querySelector('#mf-confidence').value) / 100,
         };
         const { error } = await supabase.from('sprints').insert(payload);
         if (error) { alert(t('common.error') + '\n' + error.message); return; }
@@ -152,6 +157,7 @@ export async function renderSprints(container, context) {
         name: modal.body.querySelector('#mf-name').value.trim() || null,
         start_date: modal.body.querySelector('#mf-start').value,
         end_date: modal.body.querySelector('#mf-end').value,
+        confidence_pct: Number(modal.body.querySelector('#mf-confidence').value) / 100,
       };
       const { error } = await supabase.from('sprints').update(payload).eq('id', s.id);
       if (error) { alert(t('common.error') + '\n' + error.message); return; }
@@ -173,10 +179,10 @@ export async function renderSprints(container, context) {
 
   async function loadSprints() {
     const tbody = document.getElementById('sprint-tbody');
-    if (!piSelect.value) { sprintsData = []; tbody.innerHTML = `<tr><td colspan="7" class="empty-state">${t('common.none')}</td></tr>`; return; }
+    if (!piSelect.value) { sprintsData = []; tbody.innerHTML = `<tr><td colspan="8" class="empty-state">${t('common.none')}</td></tr>`; return; }
 
     const { data, error } = await supabase.from('sprints').select('*').eq('pi_id', piSelect.value);
-    if (error) { tbody.innerHTML = `<tr><td colspan="7" class="empty-state">${t('common.error')}</td></tr>`; return; }
+    if (error) { tbody.innerHTML = `<tr><td colspan="8" class="empty-state">${t('common.error')}</td></tr>`; return; }
     sprintsData = data || [];
 
     const sprintIds = sprintsData.map(s => s.id);
@@ -202,7 +208,7 @@ export async function renderSprints(container, context) {
 
   function renderSprintRows() {
     const tbody = document.getElementById('sprint-tbody');
-    if (!sprintsData.length) { tbody.innerHTML = `<tr><td colspan="7" class="empty-state">${t('common.none')}</td></tr>`; return; }
+    if (!sprintsData.length) { tbody.innerHTML = `<tr><td colspan="8" class="empty-state">${t('common.none')}</td></tr>`; return; }
 
     sortArray(sprintsData, sortState);
 
@@ -212,6 +218,10 @@ export async function renderSprints(container, context) {
         <td>${escapeHtml(s.name || '')}</td>
         <td class="mono">${formatDate(s.start_date)}</td>
         <td class="mono">${formatDate(s.end_date)}</td>
+        <td class="num">
+          <input type="number" class="mono confidence-input" data-id="${s.id}" min="0" max="100" step="5" style="width:70px; text-align:right;"
+            value="${Math.round(Number(s.confidence_pct) * 100)}" ${canEdit ? '' : 'disabled'}>%
+        </td>
         <td><input type="checkbox" class="closed-toggle" ${s.is_closed ? 'checked' : ''} ${canEdit ? '' : 'disabled'}></td>
         <td class="num">
           ${s.capacityTotal !== null && s.capacityTotal !== undefined
@@ -243,6 +253,20 @@ export async function renderSprints(container, context) {
 
     tbody.querySelectorAll('.velocity-btn').forEach(btn => {
       btn.addEventListener('click', () => openVelocityModal(btn.closest('tr').dataset.id));
+    });
+
+    tbody.querySelectorAll('.confidence-input').forEach(input => {
+      input.addEventListener('change', async () => {
+        const id = input.dataset.id;
+        let pct = Number(input.value);
+        if (Number.isNaN(pct) || pct < 0) pct = 0;
+        if (pct > 100) pct = 100;
+        input.value = pct;
+        const { error } = await supabase.from('sprints').update({ confidence_pct: pct / 100 }).eq('id', id);
+        if (error) { alert(t('common.error') + '\n' + error.message); return; }
+        const s = sprintsData.find(x => x.id === id);
+        if (s) s.confidence_pct = pct / 100;
+      });
     });
 
     tbody.querySelectorAll('.closed-toggle').forEach(cb => {
@@ -279,11 +303,10 @@ export async function renderSprints(container, context) {
   async function openVelocityModal(sprintId) {
     const sprint = sprintsData.find(s => s.id === sprintId);
 
-    const [{ data: teams }, { data: existing }, { data: caps }, { data: band }, { data: cfg }] = await Promise.all([
+    const [{ data: teams }, { data: existing }, { data: caps }, { data: cfg }] = await Promise.all([
       supabase.from('teams').select('id, name').eq('tracks_capacity', true).order('name'),
       supabase.from('sprint_velocity').select('team_id, planned_sp, completed_sp').eq('sprint_id', sprintId),
       supabase.from('capacity_snapshots').select('capacity_person_days, employees(team_id)').eq('sprint_id', sprintId),
-      supabase.from('confidence_bands').select('lower_pct, upper_pct').eq('sprint_position', sprint ? sprint.sprint_number : -1).maybeSingle(),
       supabase.from('app_config').select('value').eq('key', 'velocity_rolling_window').maybeSingle(),
     ]);
 
@@ -302,15 +325,15 @@ export async function renderSprints(container, context) {
     }
 
     // Pro Team die historische Velocity abfragen und daraus die konservative Prognose berechnen
-    // (Untergrenze des Konfidenzbands - bei Sprint 1 einer PI = 100%, entspricht dann dem vollen
-    // Durchschnittswert; je weiter in der PI, desto vorsichtiger die Zahl automatisch).
+    // (Konfidenz-Prozentsatz dieses einzelnen Sprints - bei 100% entspricht das dem vollen
+    // Durchschnittswert; je niedriger, desto vorsichtiger die Zahl).
     const velocities = await Promise.all(teams.map(tm => supabase.rpc('get_team_velocity', { target_team_id: tm.id, window_size: windowSize })));
     const forecastByTeam = new Map();
     teams.forEach((tm, i) => {
       const velocity = velocities[i].data;
       const capacity = capacityByTeam.get(tm.id);
-      if (velocity == null || capacity == null || !band) { forecastByTeam.set(tm.id, null); return; }
-      forecastByTeam.set(tm.id, Math.round(velocity * capacity * Number(band.lower_pct)));
+      if (velocity == null || capacity == null || !sprint) { forecastByTeam.set(tm.id, null); return; }
+      forecastByTeam.set(tm.id, Math.round(velocity * capacity * Number(sprint.confidence_pct)));
     });
 
     const bodyHtml = `

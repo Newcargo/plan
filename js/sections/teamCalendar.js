@@ -82,6 +82,7 @@ export async function renderTeamCalendar(container, context) {
         <h2 id="cal-month-label"></h2>
         <button type="button" class="btn btn-secondary" id="cal-next">›</button>
         <button type="button" class="btn btn-secondary" id="cal-today">${t('teamCal.today')}</button>
+        <button type="button" class="btn btn-secondary" id="cal-export-btn" style="margin-left:auto;">📥 ${t('teamCal.export')}</button>
       </div>
       <div class="cal-scroll">
         <table class="cal-table" id="cal-table"></table>
@@ -109,6 +110,7 @@ export async function renderTeamCalendar(container, context) {
   document.getElementById('cal-prev').addEventListener('click', () => { cursor.setMonth(cursor.getMonth() - 1); load(); });
   document.getElementById('cal-next').addEventListener('click', () => { cursor.setMonth(cursor.getMonth() + 1); load(); });
   document.getElementById('cal-today').addEventListener('click', () => { cursor = new Date(); cursor.setDate(1); cursor.setHours(0, 0, 0, 0); load(); });
+  document.getElementById('cal-export-btn').addEventListener('click', openExportModal);
 
   function escapeHtml(str) {
     return String(str).replace(/[&<>"']/g, s => ({
@@ -430,6 +432,97 @@ export async function renderTeamCalendar(container, context) {
       modal.close();
       load();
     });
+  }
+
+  function openExportModal() {
+    const defaultFrom = localISO(new Date(cursor.getFullYear(), cursor.getMonth(), 1));
+    const defaultTo = localISO(new Date(cursor.getFullYear(), cursor.getMonth() + 1, 0));
+    const bodyHtml = `
+      <div class="form-grid">
+        <label>${t('teamCal.exportFrom')} – ${t('teamCal.exportTo')}</label>
+        <div class="date-range-inline">
+          <input type="date" id="export-from" required value="${defaultFrom}">
+          <span>–</span>
+          <input type="date" id="export-to" required value="${defaultTo}">
+        </div>
+      </div>
+      <p id="export-error" class="error-text" hidden></p>
+    `;
+    const modal = openFormModal({ title: t('teamCal.export'), bodyHtml, submitLabel: t('teamCal.export'), cancelLabel: t('common.cancel') });
+    modal.submitBtn.addEventListener('click', async () => {
+      const errorEl = modal.body.querySelector('#export-error');
+      errorEl.hidden = true;
+      const from = modal.body.querySelector('#export-from').value;
+      const to = modal.body.querySelector('#export-to').value;
+      if (!from || !to || from > to) {
+        errorEl.textContent = t('myLeave.dateOrderError');
+        errorEl.hidden = false;
+        return;
+      }
+      modal.submitBtn.disabled = true;
+      await exportToExcel(from, to);
+      modal.submitBtn.disabled = false;
+      modal.close();
+    });
+  }
+
+  async function exportToExcel(fromISO, toISO) {
+    const [empRes, leaveRes, holRes, blockedRes] = await Promise.all([
+      supabase.from('employees').select('id, full_name, team_id, teams(name)').order('full_name'),
+      supabase.from('leave_requests').select('employee_id, start_date, end_date, day_portion, status, absence_type')
+        .in('status', ['beantragt', 'genehmigt_projekt', 'final_gebucht'])
+        .lte('start_date', toISO).gte('end_date', fromISO),
+      supabase.from('holidays').select('date, name').gte('date', fromISO).lte('date', toISO),
+      supabase.from('blocked_periods').select('start_date, end_date, label').lte('start_date', toISO).gte('end_date', fromISO),
+    ]);
+
+    const employees = empRes.data || [];
+    const leaves = leaveRes.data || [];
+    const holidaysList = holRes.data || [];
+    const blockedList = blockedRes.data || [];
+
+    // Alle Tage im gewaehlten Zeitraum als Spalten
+    const dates = [];
+    let d = new Date(fromISO + 'T00:00:00');
+    const end = new Date(toISO + 'T00:00:00');
+    while (d <= end) {
+      dates.push(localISO(d));
+      d.setDate(d.getDate() + 1);
+    }
+
+    const wdShort = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
+    const header = [t('teamCal.exportName'), t('teamCal.exportTeam'), ...dates.map(iso => {
+      const dt = new Date(iso + 'T00:00:00');
+      return `${wdShort[dt.getDay()]} ${formatDate(iso)}`;
+    })];
+
+    function cellFor(empId, iso) {
+      const leave = leaves.find(lr => lr.employee_id === empId && lr.start_date <= iso && lr.end_date >= iso);
+      if (leave) {
+        const code = leave.absence_type === 'krankheit' ? 'K' : STATUS_COLORS[leave.status]?.code || leave.status;
+        const suffix = leave.day_portion === 'vormittag' ? ' (V)' : leave.day_portion === 'nachmittag' ? ' (N)' : '';
+        return code + suffix;
+      }
+      const holiday = holidaysList.find(h => h.date === iso);
+      if (holiday) return 'F';
+      const blocked = blockedList.find(bp => bp.start_date <= iso && bp.end_date >= iso);
+      if (blocked) return 'S';
+      const dow = new Date(iso + 'T00:00:00').getDay();
+      if (dow === 0 || dow === 6) return '';
+      return '';
+    }
+
+    const rows = employees.map(emp => [
+      emp.full_name,
+      emp.teams ? emp.teams.name : '',
+      ...dates.map(iso => cellFor(emp.id, iso)),
+    ]);
+
+    const ws = XLSX.utils.aoa_to_sheet([header, ...rows]);
+    ws['!cols'] = [{ wch: 22 }, { wch: 18 }, ...dates.map(() => ({ wch: 8 }))];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, t('teamCal.title').slice(0, 31));
+    XLSX.writeFile(wb, `Team-Kalender_${fromISO}_bis_${toISO}.xlsx`);
   }
 
   load();
