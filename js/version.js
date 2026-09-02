@@ -6,9 +6,23 @@
 //
 // Bei jeder Aenderung: APP_VERSION anpassen UND einen neuen Eintrag oben in CHANGELOG ergaenzen.
 
-export const APP_VERSION = '2.17.0';
+export const APP_VERSION = '2.18.0';
 
 export const CHANGELOG = [
+  {
+    version: '2.18.0',
+    date: '2026-08-25',
+    changes: {
+      de: [
+        'Neu: Kopieren-Button bei Feiertagen und Sperrzeiten - öffnet das Hinzufügen-Pop-up mit Bezeichnung/Portion/Bemerkung (bzw. Grund/Kapazitäts-Auswirkung) vorausgefüllt, Datum bleibt bewusst leer und Pflichtfeld',
+        'Praktisch für wiederkehrende Einträge, z. B. jährliche Feiertage oder Betriebsferien',
+      ],
+      en: [
+        'New: copy button on holidays and blocked periods - opens the add pop-up with name/portion/note (or reason/capacity impact) pre-filled, date stays deliberately empty and required',
+        'Handy for recurring entries, e.g. yearly holidays or company shutdowns',
+      ],
+    },
+  },
   {
     version: '2.17.0',
     date: '2026-08-25',

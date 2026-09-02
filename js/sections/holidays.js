@@ -1,6 +1,6 @@
 import { supabase } from '../supabaseClient.js';
 import { t } from '../i18n.js';
-import { ICON_EDIT, ICON_DELETE, iconButton, fieldLabel } from '../icons.js';
+import { ICON_EDIT, ICON_DELETE, ICON_COPY, iconButton, fieldLabel } from '../icons.js';
 import { formatDate, todayISO } from '../dateFormat.js';
 import { openFormModal } from '../modal.js';
 
@@ -20,10 +20,11 @@ export async function renderHolidays(container, context) {
   `;
 
   function formBody(h) {
+    const dateValue = h && 'date' in h ? h.date : todayISO();
     return `
       <div class="form-grid">
         ${fieldLabel(t('holidays.date'), 'Datum des Feiertags. Wird bei der Kapazitätsberechnung automatisch als Nicht-Arbeitstag berücksichtigt.')}
-        <input type="date" id="mf-date" required value="${h ? h.date : todayISO()}">
+        <input type="date" id="mf-date" required value="${dateValue}">
 
         <label>${t('holidays.name')}</label>
         <input type="text" id="mf-name" required value="${h ? escapeHtml(h.name) : ''}">
@@ -41,8 +42,8 @@ export async function renderHolidays(container, context) {
     `;
   }
 
-  function openAdd() {
-    const modal = openFormModal({ title: t('common.add'), bodyHtml: formBody(null), submitLabel: t('common.add'), cancelLabel: t('common.cancel') });
+  function openAdd(template) {
+    const modal = openFormModal({ title: t('common.add'), bodyHtml: formBody(template || null), submitLabel: t('common.add'), cancelLabel: t('common.cancel') });
     modal.submitBtn.addEventListener('click', async () => {
       const payload = {
         date: modal.body.querySelector('#mf-date').value,
@@ -56,6 +57,12 @@ export async function renderHolidays(container, context) {
       modal.close();
       load();
     });
+  }
+
+  // Kopieren: gleiche Bezeichnung/Portion/Bemerkung uebernehmen, Datum bewusst leer und
+  // Pflichtfeld - fuer wiederkehrende Feiertage (z.B. jedes Jahr derselbe Name).
+  function openCopy(h) {
+    openAdd({ name: h.name, day_portion: h.day_portion, note: h.note, date: '' });
   }
 
   function openEdit(h) {
@@ -74,7 +81,7 @@ export async function renderHolidays(container, context) {
     });
   }
 
-  if (canEdit) document.getElementById('open-add-btn').addEventListener('click', openAdd);
+  if (canEdit) document.getElementById('open-add-btn').addEventListener('click', () => openAdd());
 
   async function load() {
     const container = document.getElementById('hol-groups');
@@ -117,6 +124,7 @@ export async function renderHolidays(container, context) {
                     <td>${escapeHtml(h.name)}${h.day_portion !== 'ganztag' ? ` <span class="badge badge-info">${t('myLeave.dayPortion.' + h.day_portion)}</span>` : ''}</td>
                     <td>${escapeHtml(h.note || '')}</td>
                     <td class="row-actions">
+                      ${canEdit ? iconButton(ICON_COPY, t('common.copy'), 'copy-btn') : ''}
                       ${canEdit ? iconButton(ICON_EDIT, t('common.edit'), 'edit-btn') : ''}
                       ${canEdit ? iconButton(ICON_DELETE, t('common.delete'), 'delete-btn') : ''}
                     </td>
@@ -134,6 +142,14 @@ export async function renderHolidays(container, context) {
         const year = header.dataset.year;
         if (expandedYears.has(year)) expandedYears.delete(year); else expandedYears.add(year);
         renderGroups();
+      });
+    });
+
+    container.querySelectorAll('.copy-btn').forEach(btn => {
+      btn.addEventListener('click', e => {
+        e.stopPropagation();
+        const id = btn.closest('tr').dataset.id;
+        openCopy(holidaysData.find(x => x.id === id));
       });
     });
 
