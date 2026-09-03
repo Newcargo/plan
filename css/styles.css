@@ -208,6 +208,17 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
 .notif-item:hover { background: var(--bg); }
 .notif-item.unread { font-weight: 600; background: var(--accent-soft); }
 .notif-item .notif-date { font-size: 0.72rem; color: var(--text-muted); font-weight: 400; margin-top: 0.2rem; }
+
+.cal-team-filter { position: relative; }
+.cal-team-filter-panel {
+  position: absolute; top: 42px; left: 0; min-width: 220px; max-height: 320px; overflow-y: auto;
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+  box-shadow: 0 12px 32px rgba(0,0,0,0.16); z-index: 60; padding: 0.5rem;
+}
+.cal-team-filter-panel label { display: flex; align-items: center; gap: 0.5rem; padding: 0.4rem 0.5rem; font-size: 0.85rem; font-weight: 400; cursor: pointer; border-radius: 6px; }
+.cal-team-filter-panel label:hover { background: var(--bg); }
+.cal-team-filter-actions { display: flex; gap: 0.75rem; padding: 0.2rem 0.5rem 0.5rem; border-bottom: 1px solid var(--border); margin-bottom: 0.3rem; }
+.cal-team-filter-actions a { font-size: 0.78rem; color: var(--accent); cursor: pointer; text-decoration: underline; }
 .notif-empty { padding: 1.5rem; text-align: center; color: var(--text-muted); font-size: 0.85rem; }
 
 .main {

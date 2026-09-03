@@ -67,6 +67,7 @@ export async function renderTeamCalendar(container, context) {
   const permissions = (context && context.permissions) || {};
   const canApprove = !!(permissions.genehmigt && permissions.genehmigt.edit);
   let emailEnabled = true;
+  let selectedTeamIds = null; // null = noch nicht initialisiert, wird beim ersten Laden auf "alle" gesetzt
   let cursor = new Date();
   cursor.setDate(1);
   cursor.setHours(0, 0, 0, 0);
@@ -82,6 +83,10 @@ export async function renderTeamCalendar(container, context) {
         <h2 id="cal-month-label"></h2>
         <button type="button" class="btn btn-secondary" id="cal-next">›</button>
         <button type="button" class="btn btn-secondary" id="cal-today">${t('teamCal.today')}</button>
+        <div class="cal-team-filter">
+          <button type="button" class="btn btn-secondary" id="cal-team-filter-btn">🏷️ ${t('teamCal.filterTeams')}</button>
+          <div id="cal-team-filter-panel" class="cal-team-filter-panel" hidden></div>
+        </div>
         <button type="button" class="btn btn-secondary" id="cal-export-btn" style="margin-left:auto;">📥 ${t('teamCal.export')}</button>
       </div>
       <div class="cal-scroll">
@@ -112,6 +117,16 @@ export async function renderTeamCalendar(container, context) {
   document.getElementById('cal-today').addEventListener('click', () => { cursor = new Date(); cursor.setDate(1); cursor.setHours(0, 0, 0, 0); load(); });
   document.getElementById('cal-export-btn').addEventListener('click', openExportModal);
 
+  document.getElementById('cal-team-filter-btn').addEventListener('click', e => {
+    e.stopPropagation();
+    document.getElementById('cal-team-filter-panel').hidden = !document.getElementById('cal-team-filter-panel').hidden;
+  });
+  document.addEventListener('click', e => {
+    const panel = document.getElementById('cal-team-filter-panel');
+    const filterEl = document.querySelector('.cal-team-filter');
+    if (panel && !panel.hidden && filterEl && !filterEl.contains(e.target)) panel.hidden = true;
+  });
+
   function escapeHtml(str) {
     return String(str).replace(/[&<>"']/g, s => ({
       '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
@@ -131,6 +146,44 @@ export async function renderTeamCalendar(container, context) {
     return blocked.day_portion && blocked.day_portion !== 'ganztag'
       ? `${blocked.label} (${t('myLeave.dayPortion.' + blocked.day_portion)})`
       : blocked.label;
+  }
+
+  function renderTeamFilterPanel(teams) {
+    const panel = document.getElementById('cal-team-filter-panel');
+    const wasHidden = panel.hidden;
+    panel.innerHTML = `
+      <div class="cal-team-filter-actions">
+        <a id="cal-filter-all">${t('teamCal.filterAll')}</a>
+        <a id="cal-filter-none">${t('teamCal.filterNone')}</a>
+      </div>
+      ${teams.map(tm => `
+        <label>
+          <input type="checkbox" class="cal-team-filter-cb" value="${tm.id}" ${selectedTeamIds.has(tm.id) ? 'checked' : ''}>
+          ${escapeHtml(tm.name)}
+        </label>
+      `).join('')}
+    `;
+    panel.hidden = wasHidden;
+
+    function applyAndReload() {
+      const wasOpen = !document.getElementById('cal-team-filter-panel').hidden;
+      load().then(() => { document.getElementById('cal-team-filter-panel').hidden = !wasOpen; });
+    }
+
+    panel.querySelectorAll('.cal-team-filter-cb').forEach(cb => {
+      cb.addEventListener('change', () => {
+        if (cb.checked) selectedTeamIds.add(cb.value); else selectedTeamIds.delete(cb.value);
+        applyAndReload();
+      });
+    });
+    document.getElementById('cal-filter-all').addEventListener('click', () => {
+      selectedTeamIds = new Set(teams.map(tm => tm.id));
+      applyAndReload();
+    });
+    document.getElementById('cal-filter-none').addEventListener('click', () => {
+      selectedTeamIds = new Set();
+      applyAndReload();
+    });
   }
 
   async function load() {
@@ -161,6 +214,9 @@ export async function renderTeamCalendar(container, context) {
 
     const teams = teamsRes.data || [];
     const employees = employeesRes.data || [];
+
+    if (selectedTeamIds === null) selectedTeamIds = new Set(teams.map(tm => tm.id));
+    renderTeamFilterPanel(teams);
     const isAdmin = roles.has('admin');
     const teamApproverMap = new Map(teams.map(tm => [tm.id, tm.approver_id]));
     // Darf ich (nicht Admin) genau DIESEN Mitarbeiter genehmigen? Nur wenn ich fuer sein Team
@@ -213,13 +269,15 @@ export async function renderTeamCalendar(container, context) {
       return list.find(lr => lr.start_date <= iso && lr.end_date >= iso) || null;
     }
 
-    // Nach Team gruppieren und sortieren
-    const sorted = [...employees].sort((a, b) => {
-      const teamA = teamMap.get(a.team_id) || '';
-      const teamB = teamMap.get(b.team_id) || '';
-      if (teamA !== teamB) return teamA.localeCompare(teamB, 'de');
-      return a.full_name.localeCompare(b.full_name, 'de');
-    });
+    // Nach Team gruppieren, filtern (Mitarbeitende ohne Team-Zuordnung immer anzeigen) und sortieren
+    const sorted = employees
+      .filter(emp => !emp.team_id || selectedTeamIds.has(emp.team_id))
+      .sort((a, b) => {
+        const teamA = teamMap.get(a.team_id) || '';
+        const teamB = teamMap.get(b.team_id) || '';
+        if (teamA !== teamB) return teamA.localeCompare(teamB, 'de');
+        return a.full_name.localeCompare(b.full_name, 'de');
+      });
 
     const weekdayLetters = { de: ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'], en: ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'] };
     const lang = document.documentElement.lang === 'en' ? 'en' : 'de';
@@ -476,7 +534,7 @@ export async function renderTeamCalendar(container, context) {
       supabase.from('blocked_periods').select('start_date, end_date, label').lte('start_date', toISO).gte('end_date', fromISO),
     ]);
 
-    const employees = empRes.data || [];
+    const employees = (empRes.data || []).filter(emp => !emp.team_id || selectedTeamIds.has(emp.team_id));
     const leaves = leaveRes.data || [];
     const holidaysList = holRes.data || [];
     const blockedList = blockedRes.data || [];

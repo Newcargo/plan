@@ -6,9 +6,27 @@
 //
 // Bei jeder Aenderung: APP_VERSION anpassen UND einen neuen Eintrag oben in CHANGELOG ergaenzen.
 
-export const APP_VERSION = '2.20.0';
+export const APP_VERSION = '2.21.0';
 
 export const CHANGELOG = [
+  {
+    version: '2.21.0',
+    date: '2026-08-25',
+    changes: {
+      de: [
+        'Neu: Team-Filter im Team-Kalender - Dropdown mit Checkboxen pro Team, Standard sind alle Teams angezeigt',
+        'Mitarbeitende ohne Team-Zuordnung werden immer angezeigt, unabhängig vom Filter',
+        'Auswahl bleibt beim Blättern zwischen Monaten erhalten, setzt sich aber beim erneuten Aufrufen der Seite auf "alle Teams" zurück',
+        'Excel-Export berücksichtigt jetzt dieselbe Team-Auswahl wie die aktuelle Ansicht',
+      ],
+      en: [
+        'New: team filter in the team calendar - dropdown with checkboxes per team, all teams shown by default',
+        'Employees without a team assignment are always shown, regardless of the filter',
+        'Selection persists while navigating between months, but resets to "all teams" when revisiting the page',
+        'Excel export now respects the same team selection as the current view',
+      ],
+    },
+  },
   {
     version: '2.20.0',
     date: '2026-08-25',
